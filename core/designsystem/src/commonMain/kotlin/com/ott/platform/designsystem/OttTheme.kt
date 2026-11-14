@@ -9,32 +9,46 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 /**
- * Android OTT / lean-back inspired cinematic palette.
- * Dark-first: deep charcoal surfaces, crimson play accent, soft focus glow.
+ * Google Android TV / Google TV inspired leanback palette.
+ * Pure black canvas, white focus rings, soft grey surfaces, blue accent sparingly.
  */
 object OttColors {
-    val Background = Color(0xFF0B0D10)
-    val Surface = Color(0xFF151922)
-    val SurfaceElevated = Color(0xFF1E2430)
-    val OnSurface = Color(0xFFF2F4F8)
-    val OnSurfaceMuted = Color(0xFF9AA3B2)
-    val Accent = Color(0xFFE50914)
-    val AccentSoft = Color(0xFFFF6B6B)
-    val Focus = Color(0xFFFFFFFF)
-    val Success = Color(0xFF3DDC97)
-    val Warning = Color(0xFFFFB020)
+    val Background = Color(0xFF000000)
+    val Surface = Color(0xFF121212)
+    val SurfaceElevated = Color(0xFF1C1C1C)
+    val OnSurface = Color(0xFFFFFFFF)
+    val OnSurfaceMuted = Color(0xFFB3B3B3)
+    val Accent = Color(0xFF4285F4) // Google Blue for selected/actions
+    val AccentSoft = Color(0xFF8AB4F8)
+    val Cta = Color(0xFFFFFFFF)
+    val CtaOn = Color(0xFF000000)
+    val Focus = Color(0xFF4285F4) // Blue focus/highlighter ring
+    val Success = Color(0xFF34A853)
+    val Warning = Color(0xFFFBBC04)
 }
 
 object OttDimens {
-    val ScreenPadding = 16.dp
-    val ShelfSpacing = 20.dp
-    val CardWidth = 140.dp
-    val CardHeight = 78.dp
-    val TvCardWidth = 220.dp
-    val TvCardHeight = 124.dp
-    val HeroHeight = 280.dp
-    val TvHeroHeight = 420.dp
-    val FocusBorder = 3.dp
+    val ScreenPadding = 48.dp
+    val PhoneScreenPadding = 16.dp
+    val ShelfSpacing = 28.dp
+    val PhoneShelfSpacing = 18.dp
+    // Landscape (16:9)
+    val CardWidth = 148.dp
+    val CardHeight = 84.dp
+    val TvCardWidth = 248.dp
+    val TvCardHeight = 140.dp
+    // Portrait / vertical poster (2:3)
+    val PortraitCardWidth = 112.dp
+    val PortraitCardHeight = 168.dp
+    val TvPortraitCardWidth = 168.dp
+    val TvPortraitCardHeight = 252.dp
+    val CardCorner = 12.dp
+    val CardTitleHeight = 36.dp
+    val HeroHeight = 200.dp
+    val TvHeroHeight = 380.dp
+    val FocusBorder = 4.dp
+    val RowGap = 20.dp
+    val PhoneRowGap = 10.dp
 }
 
 private val OttDarkColors = darkColorScheme(

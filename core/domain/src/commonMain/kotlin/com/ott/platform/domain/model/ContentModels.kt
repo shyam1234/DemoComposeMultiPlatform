@@ -20,18 +20,36 @@ data class Channel(
     val isNot247: Boolean = false,
     val quality: String? = null,
     val tvgId: String? = null,
+    val userAgent: String? = null,
+    val referrer: String? = null,
 )
+
+enum class ShelfCardStyle {
+    /** 16:9 landscape tiles (news, sports, live). */
+    Landscape,
+    /** 2:3 vertical poster tiles (movies, series). */
+    Portrait,
+}
 
 data class ContentShelf(
     val id: String,
     val title: String,
     val items: List<Channel>,
+    val cardStyle: ShelfCardStyle = ShelfCardStyle.Landscape,
 )
 
 data class HomeFeed(
-    val hero: Channel?,
-    val shelves: List<ContentShelf>,
-)
+    val heroes: List<Channel> = emptyList(),
+    val shelves: List<ContentShelf> = emptyList(),
+) {
+    /** First featured item — kept for older call sites/tests. */
+    val hero: Channel? get() = heroes.firstOrNull()
+
+    constructor(hero: Channel?, shelves: List<ContentShelf>) : this(
+        heroes = listOfNotNull(hero),
+        shelves = shelves,
+    )
+}
 
 sealed class OttResult<out T> {
     data class Success<T>(val data: T) : OttResult<T>()

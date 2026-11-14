@@ -24,10 +24,11 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun WatchlistRoute(
     onOpenDetails: (Channel) -> Unit,
+    isTv: Boolean = false,
     viewModel: WatchlistViewModel = koinViewModel(),
 ) {
     val items by viewModel.items.collectAsState()
-    WatchlistScreen(items = items, onOpenDetails = onOpenDetails)
+    WatchlistScreen(items = items, onOpenDetails = onOpenDetails, isTv = isTv)
 }
 
 @Composable
@@ -35,8 +36,10 @@ fun WatchlistScreen(
     items: List<Channel>,
     onOpenDetails: (Channel) -> Unit,
     modifier: Modifier = Modifier,
+    isTv: Boolean = false,
 ) {
-    Column(modifier.fillMaxSize().padding(OttDimens.ScreenPadding)) {
+    val edge = if (isTv) OttDimens.ScreenPadding else OttDimens.PhoneScreenPadding
+    Column(modifier.fillMaxSize().padding(edge)) {
         Text("Watchlist", style = MaterialTheme.typography.headlineMedium)
         if (items.isEmpty()) {
             Text(

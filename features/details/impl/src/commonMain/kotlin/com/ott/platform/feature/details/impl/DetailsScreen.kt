@@ -39,6 +39,7 @@ fun DetailsRoute(
     contentId: String,
     onPlay: (Channel) -> Unit,
     onBack: () -> Unit,
+    isTv: Boolean = false,
     viewModel: DetailsViewModel = koinViewModel(parameters = { parametersOf(contentId) }),
 ) {
     val state by viewModel.state.collectAsState()
@@ -47,6 +48,7 @@ fun DetailsRoute(
         onPlay = { state.channel?.let(onPlay) },
         onToggleWatchlist = viewModel::onToggleWatchlist,
         onBack = onBack,
+        isTv = isTv,
     )
 }
 
@@ -57,7 +59,9 @@ fun DetailsScreen(
     onToggleWatchlist: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    isTv: Boolean = false,
 ) {
+    val edge = if (isTv) OttDimens.ScreenPadding else OttDimens.PhoneScreenPadding
     when {
         state.isLoading -> Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator(Modifier.testTag("details_loading"))
@@ -71,7 +75,7 @@ fun DetailsScreen(
                 modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
-                    .padding(OttDimens.ScreenPadding)
+                    .padding(edge)
                     .testTag("details_content"),
             ) {
                 OutlinedButton(onClick = onBack) { Text("Back") }
@@ -81,13 +85,11 @@ fun DetailsScreen(
                     shape = RoundedCornerShape(12.dp),
                     color = OttColors.SurfaceElevated,
                 ) {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text(
-                            text = channel.title.take(1).uppercase(),
-                            style = MaterialTheme.typography.displayLarge,
-                            color = Color.White,
-                        )
-                    }
+                    com.ott.platform.ui.components.RemoteImage(
+                        url = channel.logoUrl,
+                        contentDescription = channel.title,
+                        modifier = Modifier.fillMaxSize(),
+                    )
                 }
                 Spacer(Modifier.height(20.dp))
                 Text(channel.title, style = MaterialTheme.typography.headlineLarge)

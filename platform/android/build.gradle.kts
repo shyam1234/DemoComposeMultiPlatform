@@ -7,13 +7,14 @@ kotlin {
     androidTarget()
     sourceSets {
         commonMain.dependencies {
-            implementation(projects.core.playerApi)
             implementation(projects.core.domain)
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.koin.core)
         }
         androidMain.dependencies {
             implementation(libs.media3.exoplayer)
+            implementation(libs.media3.exoplayer.hls)
+            implementation(libs.media3.exoplayer.dash)
             implementation(libs.media3.ui)
             implementation(libs.koin.android)
         }

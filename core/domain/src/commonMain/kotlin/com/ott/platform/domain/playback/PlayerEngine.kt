@@ -51,4 +51,7 @@ interface PlayerEngine {
     fun selectAudioTrack(trackId: String)
     fun selectVideoQuality(qualityId: String)
     fun release()
+
+    /** Platform player instance (e.g. Media3 ExoPlayer) for attaching a video surface. */
+    fun nativePlayer(): Any? = null
 }

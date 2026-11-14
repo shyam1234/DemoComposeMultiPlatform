@@ -1,5 +1,6 @@
 package com.ott.platform.feature.home.impl
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -18,10 +19,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import com.ott.platform.designsystem.OttColors
 import com.ott.platform.designsystem.OttDimens
 import com.ott.platform.domain.model.Channel
 import com.ott.platform.ui.components.ContentShelfRow
-import com.ott.platform.ui.components.HeroBanner
+import com.ott.platform.ui.components.HeroBannerCarousel
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
@@ -52,12 +54,25 @@ fun HomeScreen(
 ) {
     when {
         state.isLoading && state.feed == null -> {
-            Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(modifier = Modifier.testTag("home_loading"))
+            Box(
+                modifier
+                    .fillMaxSize()
+                    .background(OttColors.Background),
+                contentAlignment = Alignment.Center,
+            ) {
+                CircularProgressIndicator(
+                    color = OttColors.Accent,
+                    modifier = Modifier.testTag("home_loading"),
+                )
             }
         }
         state.error != null && state.feed == null -> {
-            Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Box(
+                modifier
+                    .fillMaxSize()
+                    .background(OttColors.Background),
+                contentAlignment = Alignment.Center,
+            ) {
                 TextButton(onClick = onRetry, modifier = Modifier.testTag("home_retry")) {
                     Text(state.error ?: "Retry")
                 }
@@ -65,18 +80,25 @@ fun HomeScreen(
         }
         else -> {
             val feed = state.feed ?: return
+            val edge = if (isTv) OttDimens.ScreenPadding else OttDimens.PhoneScreenPadding
             LazyColumn(
-                modifier = modifier.fillMaxSize().testTag("home_feed"),
-                contentPadding = PaddingValues(bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(OttDimens.ShelfSpacing),
+                modifier = modifier
+                    .fillMaxSize()
+                    .background(OttColors.Background)
+                    .testTag("home_feed"),
+                contentPadding = PaddingValues(bottom = if (isTv) 48.dp else 16.dp),
+                verticalArrangement = Arrangement.spacedBy(
+                    if (isTv) OttDimens.ShelfSpacing else OttDimens.PhoneShelfSpacing,
+                ),
             ) {
-                feed.hero?.let { hero ->
-                    item(key = "hero") {
-                        HeroBanner(
-                            channel = hero,
-                            onPlay = { onPlay(hero) },
-                            onDetails = { onOpenDetails(hero) },
+                if (feed.heroes.isNotEmpty()) {
+                    item(key = "hero_carousel") {
+                        HeroBannerCarousel(
+                            channels = feed.heroes,
+                            onPlay = onPlay,
+                            onDetails = onOpenDetails,
                             height = if (isTv) OttDimens.TvHeroHeight else OttDimens.HeroHeight,
+                            isTv = isTv,
                         )
                     }
                 }
@@ -92,7 +114,7 @@ fun HomeScreen(
                         Text(
                             text = "Partial error: ${state.error}",
                             color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.padding(OttDimens.ScreenPadding),
+                            modifier = Modifier.padding(horizontal = edge),
                         )
                     }
                 }

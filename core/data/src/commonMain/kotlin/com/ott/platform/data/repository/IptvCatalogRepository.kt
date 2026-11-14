@@ -8,6 +8,7 @@ import com.ott.platform.domain.model.ContentId
 import com.ott.platform.domain.model.ContentShelf
 import com.ott.platform.domain.model.HomeFeed
 import com.ott.platform.domain.model.OttResult
+import com.ott.platform.domain.model.ShelfCardStyle
 import com.ott.platform.domain.repository.CatalogRepository
 import com.ott.platform.logging.OttLogger
 import kotlinx.coroutines.async
@@ -45,14 +46,37 @@ class IptvCatalogRepository(
                     val name = categories[categoryId]?.name ?: categoryId.replaceFirstChar { it.uppercase() }
                     val items = loadCategory(categoryId, name, limitPerShelf)
                         .filterNot { it.isGeoBlocked }
-                    ContentShelf(id = categoryId, title = name, items = items)
+                    ContentShelf(
+                        id = categoryId,
+                        title = name,
+                        items = items,
+                        cardStyle = cardStyleFor(categoryId),
+                    )
                 }
             }.awaitAll().filter { it.items.isNotEmpty() }
         }
 
-        val hero = shelves.firstOrNull()?.items?.firstOrNull()
-        HomeFeed(hero = hero, shelves = shelves)
+        val heroes = shelves
+            .asSequence()
+            .flatMap { shelf -> shelf.items.asSequence().map { shelf to it } }
+            .filter { (_, channel) ->
+                !channel.logoUrl.isNullOrBlank() &&
+                    channel.streamUrl.contains(".m3u8", ignoreCase = true)
+            }
+            .distinctBy { (_, channel) -> channel.id.value }
+            .take(HERO_COUNT)
+            .map { it.second }
+            .toList()
+            .ifEmpty { listOfNotNull(shelves.firstOrNull()?.items?.firstOrNull()) }
+
+        HomeFeed(heroes = heroes, shelves = shelves)
     }
+
+    private fun cardStyleFor(categoryId: String): ShelfCardStyle =
+        when (categoryId) {
+            "movies", "series", "documentary", "kids" -> ShelfCardStyle.Portrait
+            else -> ShelfCardStyle.Landscape
+        }
 
     override suspend fun getChannelsByCategory(categoryId: String, limit: Int): OttResult<List<Channel>> =
         runCatchingResult {
@@ -124,5 +148,6 @@ class IptvCatalogRepository(
 
     private companion object {
         const val TAG = "IptvCatalogRepository"
+        const val HERO_COUNT = 6
     }
 }

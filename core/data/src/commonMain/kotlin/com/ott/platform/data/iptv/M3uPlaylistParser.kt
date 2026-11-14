@@ -69,7 +69,10 @@ object M3uPlaylistParser {
             channels += Channel(
                 id = ContentId(idValue),
                 title = cleanTitle,
-                logoUrl = attrs["tvg-logo"]?.takeIf { it.isNotBlank() },
+                logoUrl = attrs["tvg-logo"]
+                    ?.takeIf { it.isNotBlank() }
+                    // Coil has no SVG decoder by default; skip SVG artwork.
+                    ?.takeUnless { it.contains(".svg", ignoreCase = true) },
                 streamUrl = url,
                 categoryId = categoryId,
                 categoryName = categoryName,
@@ -78,9 +81,15 @@ object M3uPlaylistParser {
                 isNot247 = isNot247,
                 quality = quality,
                 tvgId = tvgId,
+                userAgent = userAgent,
             )
         }
-        return channels
+        // Prefer channels that have artwork and HLS-friendly URLs first.
+        return channels.sortedWith(
+            compareByDescending<Channel> { !it.logoUrl.isNullOrBlank() }
+                .thenByDescending { it.streamUrl.contains(".m3u8", ignoreCase = true) }
+                .thenBy { it.isNot247 },
+        )
     }
 
     private fun buildId(categoryId: String, tvgId: String?, title: String, url: String): String {

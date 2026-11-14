@@ -1,6 +1,7 @@
 package com.ott.platform.navigation
 
 object OttRoutes {
+    const val SPLASH = "splash"
     const val HOME = "home"
     const val SEARCH = "search"
     const val WATCHLIST = "watchlist"

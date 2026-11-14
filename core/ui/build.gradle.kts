@@ -17,6 +17,10 @@ kotlin {
             implementation(libs.compose.material3)
             implementation(libs.compose.ui)
         }
+        androidMain.dependencies {
+            implementation(libs.coil.compose)
+            implementation(libs.coil.network.okhttp)
+        }
         commonTest.dependencies { implementation(libs.kotlin.test) }
         val desktopMain by getting {
             dependencies { implementation(compose.desktop.currentOs) }

@@ -6,6 +6,7 @@ import com.ott.platform.domain.model.ContentId
 import com.ott.platform.domain.model.ContentShelf
 import com.ott.platform.domain.model.HomeFeed
 import com.ott.platform.domain.model.OttResult
+import com.ott.platform.domain.model.ShelfCardStyle
 import com.ott.platform.domain.repository.CatalogRepository
 
 class FakeCatalogRepository(
@@ -21,9 +22,19 @@ class FakeCatalogRepository(
         val shelves = channels
             .groupBy { it.categoryId }
             .map { (id, items) ->
-                ContentShelf(id, items.first().categoryName, items.take(limitPerShelf))
+                val style = if (id == "movies" || id == "series") {
+                    ShelfCardStyle.Portrait
+                } else {
+                    ShelfCardStyle.Landscape
+                }
+                ContentShelf(id, items.first().categoryName, items.take(limitPerShelf), style)
             }
-        return OttResult.Success(HomeFeed(hero = channels.firstOrNull(), shelves = shelves))
+        return OttResult.Success(
+            HomeFeed(
+                heroes = channels.filter { !it.logoUrl.isNullOrBlank() }.ifEmpty { channels.take(1) },
+                shelves = shelves,
+            ),
+        )
     }
 
     override suspend fun getChannelsByCategory(categoryId: String, limit: Int): OttResult<List<Channel>> =

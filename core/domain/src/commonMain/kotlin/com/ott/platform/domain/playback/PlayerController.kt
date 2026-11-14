@@ -24,4 +24,5 @@ class PlayerController(
     fun selectAudioTrack(trackId: String) = engine.selectAudioTrack(trackId)
     fun selectVideoQuality(qualityId: String) = engine.selectVideoQuality(qualityId)
     fun release() = engine.release()
+    fun nativePlayer(): Any? = engine.nativePlayer()
 }

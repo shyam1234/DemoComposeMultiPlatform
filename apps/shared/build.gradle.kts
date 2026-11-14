@@ -24,6 +24,7 @@ kotlin {
             implementation(libs.compose.foundation)
             implementation(libs.compose.material3)
             implementation(libs.compose.ui)
+            implementation(libs.compose.components.resources)
             implementation(libs.jetbrains.navigation.compose)
             implementation(libs.jetbrains.lifecycle.runtime.compose)
             implementation(libs.koin.core)
@@ -36,6 +37,12 @@ kotlin {
 
         }
     }
+}
+
+compose.resources {
+    publicResClass = true
+    packageOfResClass = "com.ott.platform.shared.generated.resources"
+    generateResClass = always
 }
 
 android {

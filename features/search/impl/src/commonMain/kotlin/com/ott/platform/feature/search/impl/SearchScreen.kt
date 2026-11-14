@@ -26,10 +26,16 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun SearchRoute(
     onOpenDetails: (Channel) -> Unit,
+    isTv: Boolean = false,
     viewModel: SearchViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
-    SearchScreen(state = state, onQueryChange = viewModel::onQueryChange, onOpenDetails = onOpenDetails)
+    SearchScreen(
+        state = state,
+        onQueryChange = viewModel::onQueryChange,
+        onOpenDetails = onOpenDetails,
+        isTv = isTv,
+    )
 }
 
 @Composable
@@ -38,8 +44,10 @@ fun SearchScreen(
     onQueryChange: (String) -> Unit,
     onOpenDetails: (Channel) -> Unit,
     modifier: Modifier = Modifier,
+    isTv: Boolean = false,
 ) {
-    Column(modifier.fillMaxSize().padding(OttDimens.ScreenPadding)) {
+    val edge = if (isTv) OttDimens.ScreenPadding else OttDimens.PhoneScreenPadding
+    Column(modifier.fillMaxSize().padding(edge)) {
         OutlinedTextField(
             value = state.query,
             onValueChange = onQueryChange,

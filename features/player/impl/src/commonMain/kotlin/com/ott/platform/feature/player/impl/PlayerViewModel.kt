@@ -33,6 +33,8 @@ class PlayerViewModel(
                             title = channel.title,
                             streamUrl = channel.streamUrl,
                             posterUrl = channel.logoUrl,
+                            referrer = channel.referrer,
+                            userAgent = channel.userAgent,
                         ),
                     )
                     playerController.play()

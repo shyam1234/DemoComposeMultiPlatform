@@ -34,7 +34,13 @@ class M3uPlaylistParserTest {
     fun `detects geo blocked flag and respects limit`() {
         val channels = M3uPlaylistParser.parse(sample, "news", "News", limit = 2)
         assertEquals(2, channels.size)
-        assertTrue(channels[1].isGeoBlocked)
-        assertEquals("Blocked Channel", channels[1].title)
+        assertTrue(channels.any { it.isGeoBlocked && it.title == "Blocked Channel" })
+    }
+
+    @Test
+    fun `captures playlist user agent`() {
+        val channels = M3uPlaylistParser.parse(sample, "news", "News", limit = 10)
+        val uaChannel = channels.first { it.title == "UA News" }
+        assertEquals("OttDemo/1.0", uaChannel.userAgent)
     }
 }

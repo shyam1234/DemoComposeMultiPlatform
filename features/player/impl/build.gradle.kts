@@ -32,10 +32,14 @@ kotlin {
             implementation(libs.kotlinx.coroutines.test)
             implementation(projects.core.testing)
         }
+        androidMain.dependencies {
+            implementation(projects.platform.android)
+            implementation(libs.media3.exoplayer)
+            implementation(libs.media3.ui)
+            implementation(libs.koin.compose)
+        }
         val desktopMain by getting {
-
             dependencies { implementation(compose.desktop.currentOs) }
-
         }
     }
 }

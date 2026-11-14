@@ -48,7 +48,7 @@ val coreDomainModule = module {
  */
 val corePlayerModule = module {
     single<PlayerEngine> { FakePlayerEngine() }
-    factory { PlayerController(get()) }
+    single { PlayerController(get()) }
 }
 
 fun coreModules(): List<Module> = listOf(
