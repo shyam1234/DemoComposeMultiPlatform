@@ -1,0 +1,15 @@
+/.gradle/
+**/build/
+/.idea/
+*.iml
+/local.properties
+.DS_Store
+**/captures/
+*.apk
+*.aab
+xcuserdata/
+DerivedData/
+*.xcworkspace
+!default.xcworkspace
+Pods/
+.swiftpm/
