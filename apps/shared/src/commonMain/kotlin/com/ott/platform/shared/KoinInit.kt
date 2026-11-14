@@ -11,6 +11,7 @@ import org.koin.core.module.Module
 
 fun initKoin(extraModules: List<Module> = emptyList()) {
     startKoin {
+        allowOverride(true)
         modules(coreModules() + featureModules() + extraModules)
     }
 }

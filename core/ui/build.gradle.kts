@@ -6,7 +6,11 @@ plugins {
 }
 
 kotlin {
+    applyDefaultHierarchyTemplate()
     androidTarget()
+
+        iosArm64()
+    iosSimulatorArm64()
     jvm("desktop")
     sourceSets {
         commonMain.dependencies {
@@ -20,6 +24,12 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.coil.compose)
             implementation(libs.coil.network.okhttp)
+        }
+        val iosMain by getting {
+            dependencies {
+                implementation(libs.coil.compose)
+                implementation(libs.coil.network.ktor)
+            }
         }
         commonTest.dependencies { implementation(libs.kotlin.test) }
         val desktopMain by getting {

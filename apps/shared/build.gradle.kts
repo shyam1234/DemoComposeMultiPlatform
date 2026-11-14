@@ -6,7 +6,18 @@ plugins {
 }
 
 kotlin {
+    applyDefaultHierarchyTemplate()
     androidTarget()
+
+    listOf(
+                iosArm64(),
+        iosSimulatorArm64(),
+    ).forEach { iosTarget ->
+        iosTarget.binaries.framework {
+            baseName = "OttShared"
+            isStatic = true
+        }
+    }
     jvm("desktop")
     sourceSets {
         commonMain.dependencies {
@@ -32,9 +43,12 @@ kotlin {
             implementation(libs.koin.compose.viewmodel)
         }
         val desktopMain by getting {
-
             dependencies { implementation(compose.desktop.currentOs) }
-
+        }
+        val iosMain by getting {
+            dependencies {
+                implementation(projects.platform.ios)
+            }
         }
     }
 }

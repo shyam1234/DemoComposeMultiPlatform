@@ -5,7 +5,11 @@ plugins {
 }
 
 kotlin {
+    applyDefaultHierarchyTemplate()
     androidTarget()
+
+        iosArm64()
+    iosSimulatorArm64()
     jvm("desktop")
     sourceSets {
         commonMain.dependencies {
@@ -23,6 +27,9 @@ kotlin {
             implementation(libs.kotlinx.coroutines.test)
         }
         androidMain.dependencies { implementation(libs.ktor.client.okhttp) }
+        val iosMain by getting {
+            dependencies { implementation(libs.ktor.client.darwin) }
+        }
         val desktopMain by getting {
 
             dependencies { implementation(libs.ktor.client.cio) }

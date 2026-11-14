@@ -48,7 +48,7 @@ Implementation lives primarily in CMP with TV-specific components (`platform/and
 |---------|----------|--------|
 | JDK 17 (Homebrew) | Available | Android / Desktop builds |
 | Android SDK | Available (API 34–36) | Android app builds |
-| Full Xcode | Not active (CLT only) | iOS / tvOS **compile/run not verified here** |
+| Full Xcode | Required for iOS | `apps/iosApp` + `platform/ios` scaffolded; build/run needs Xcode (not CLT) |
 | Apple Silicon vs x86 | Host may vary | Simulator target selection |
 
 Anything not executed in CI/local is marked **unverified** in test reports — never claimed as passing.

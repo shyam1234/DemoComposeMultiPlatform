@@ -6,7 +6,11 @@ plugins {
 }
 
 kotlin {
+    applyDefaultHierarchyTemplate()
     androidTarget()
+
+        iosArm64()
+    iosSimulatorArm64()
     jvm("desktop")
     sourceSets {
         commonMain.dependencies {
@@ -37,6 +41,11 @@ kotlin {
             implementation(libs.media3.exoplayer)
             implementation(libs.media3.ui)
             implementation(libs.koin.compose)
+        }
+        val iosMain by getting {
+            dependencies {
+                implementation(projects.platform.ios)
+            }
         }
         val desktopMain by getting {
             dependencies { implementation(compose.desktop.currentOs) }

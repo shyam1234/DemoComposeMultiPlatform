@@ -65,15 +65,26 @@ Use an Android TV emulator or device. Verify D-pad focus, not touch-only flows.
 
 ### iOS
 
-1. Open `apps/iosApp` Xcode project (after shared framework is generated).
-2. Select iPhone/iPad simulator.
-3. Build & run.
+Requires **full Xcode** (`xcode-select -s /Applications/Xcode.app/Contents/Developer`).
 
-Typical Gradle helper (when configured):
+1. Open `apps/iosApp/iosApp.xcodeproj`.
+2. Set your Development Team in Signing (or `TEAM_ID` in `apps/iosApp/Configuration/Config.xcconfig`).
+3. Select an iPhone/iPad simulator or device → Run.
+
+The Xcode “Compile Kotlin Framework” phase runs:
 
 ```bash
 ./gradlew :apps:shared:embedAndSignAppleFrameworkForXcode
 ```
+
+Prebuild frameworks from the repo root (Apple Silicon / arm64 simulator — Compose 1.11+ has no `iosX64`):
+
+```bash
+./gradlew :apps:shared:linkDebugFrameworkIosSimulatorArm64
+./gradlew :apps:shared:linkDebugFrameworkIosArm64
+```
+
+Shared UI is the same phone layout as Android (`OttApp(isTv = false)`); playback uses `AvPlayerEngine`.
 
 ### Apple TV
 

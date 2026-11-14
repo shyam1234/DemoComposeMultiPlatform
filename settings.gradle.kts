@@ -48,3 +48,4 @@ listOf("home", "search", "details", "player", "watchlist").forEach { feature ->
 }
 
 include(":platform:android")
+include(":platform:ios")

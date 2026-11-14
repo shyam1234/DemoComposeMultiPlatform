@@ -97,7 +97,7 @@ export JAVA_HOME=/usr/local/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home
 
 ## Status
 
-Architecture docs + CMP foundation + IPTV-backed Home/Search/Details/Player/Watchlist demo are in progress. iOS targets temporarily omitted on this macOS x64 host (K/N host deprecated); Android + Desktop are the verified CMP paths here.
+Architecture docs + CMP foundation + IPTV-backed Home/Search/Details/Player/Watchlist demo are in place. Android phone/TV + Desktop are verified on this machine. **iOS** is scaffolded (`apps/iosApp` + `platform/ios` AVPlayer); open in full Xcode to build/run (CLT alone is not enough).
 
 ## Official references
 

@@ -16,7 +16,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.navArgument
+import androidx.savedstate.read
 import com.ott.platform.designsystem.OttColors
 import com.ott.platform.designsystem.OttTheme
 import com.ott.platform.feature.details.impl.DetailsRoute
@@ -135,9 +137,8 @@ fun OttApp(
                         route = OttRoutes.DETAILS,
                         arguments = listOf(navArgument("contentId") { type = NavType.StringType }),
                     ) { entry ->
-                        val id = OttRoutes.decode(entry.arguments?.getString("contentId").orEmpty())
                         DetailsRoute(
-                            contentId = id,
+                            contentId = contentIdArg(entry),
                             isTv = isTv,
                             onPlay = { navController.navigate(OttRoutes.player(it.id.value)) },
                             onBack = { navController.popBackStack() },
@@ -147,9 +148,8 @@ fun OttApp(
                         route = OttRoutes.PLAYER,
                         arguments = listOf(navArgument("contentId") { type = NavType.StringType }),
                     ) { entry ->
-                        val id = OttRoutes.decode(entry.arguments?.getString("contentId").orEmpty())
                         PlayerRoute(
-                            contentId = id,
+                            contentId = contentIdArg(entry),
                             isTv = isTv,
                             onBack = { navController.popBackStack() },
                         )
@@ -158,4 +158,9 @@ fun OttApp(
             }
         }
     }
+}
+
+private fun contentIdArg(entry: NavBackStackEntry): String {
+    val raw = entry.arguments?.read { getStringOrNull("contentId") }.orEmpty()
+    return OttRoutes.decode(raw)
 }

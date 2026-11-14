@@ -4,7 +4,11 @@ plugins {
 }
 
 kotlin {
+    applyDefaultHierarchyTemplate()
     androidTarget()
+
+        iosArm64()
+    iosSimulatorArm64()
     jvm("desktop")
 
     sourceSets {
