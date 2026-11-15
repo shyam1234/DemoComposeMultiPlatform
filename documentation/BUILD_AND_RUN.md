@@ -23,7 +23,7 @@ export PATH="$JAVA_HOME/bin:$PATH"
 Managed in `gradle/libs.versions.toml`:
 
 - Kotlin **2.4.21**
-- Compose Multiplatform **1.12.2**
+- Compose Multiplatform **1.11.1**
 - AGP **8.10.1**
 - Koin **4.1.0**
 - Ktor **3.1.3**
@@ -65,11 +65,19 @@ Use an Android TV emulator or device. Verify D-pad focus, not touch-only flows.
 
 ### iOS
 
-Requires **full Xcode** (`xcode-select -s /Applications/Xcode.app/Contents/Developer`).
+Requires **full Xcode** (not Command Line Tools only):
+
+```bash
+sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+```
 
 1. Open `apps/iosApp/iosApp.xcodeproj`.
-2. Set your Development Team in Signing (or `TEAM_ID` in `apps/iosApp/Configuration/Config.xcconfig`).
-3. Select an iPhone/iPad simulator or device → Run.
+2. Sign in with an Apple ID (Xcode → Settings → Accounts) and set `TEAM_ID` in `apps/iosApp/Configuration/Config.xcconfig` (or Signing & Capabilities).
+3. On the device: enable **Developer Mode**, then after install **Trust** the developer under VPN & Device Management.
+4. Select a **physical iPhone/iPad** (or Apple Silicon simulator) → Run.  
+   **Do not** use Intel `x86_64` simulators — Compose 1.11+ has no `iosX64` target.
+
+See also [apps/iosApp/README.md](../apps/iosApp/README.md).
 
 The Xcode “Compile Kotlin Framework” phase runs:
 
@@ -77,14 +85,14 @@ The Xcode “Compile Kotlin Framework” phase runs:
 ./gradlew :apps:shared:embedAndSignAppleFrameworkForXcode
 ```
 
-Prebuild frameworks from the repo root (Apple Silicon / arm64 simulator — Compose 1.11+ has no `iosX64`):
+Prebuild frameworks from the repo root:
 
 ```bash
-./gradlew :apps:shared:linkDebugFrameworkIosSimulatorArm64
 ./gradlew :apps:shared:linkDebugFrameworkIosArm64
+./gradlew :apps:shared:linkDebugFrameworkIosSimulatorArm64   # Apple Silicon hosts
 ```
 
-Shared UI is the same phone layout as Android (`OttApp(isTv = false)`); playback uses `AvPlayerEngine`.
+Shared UI matches Android phone (`OttApp(isTv = false)`); playback uses `AvPlayerEngine` in `platform/ios`.
 
 ### Apple TV
 
@@ -106,13 +114,18 @@ See [TESTING_GUIDE.md](TESTING_GUIDE.md).
 
 ## Demo content
 
-The app uses **mock repositories / sample catalog** data. No backend, DRM license server, or paid streaming service is required.
+Live catalog from **iptv-org** (free public M3U / categories JSON). Stream availability varies by region and upstream CDN. No DRM license server is required for the demo.
 
 ## Troubleshooting
 
 | Issue | Mitigation |
 |-------|------------|
 | Wrong Java version | Force JDK 17 via `JAVA_HOME` / `org.gradle.java.home` |
-| iOS build fails with CLT only | Install full Xcode and select it with `xcode-select` |
+| iOS build fails with CLT only | Install full Xcode and `xcode-select -s /Applications/Xcode.app/Contents/Developer` |
+| Signing requires a development team | Add Apple ID in Xcode Accounts; set `TEAM_ID` / Automatic signing |
+| `Unknown iOS simulator arch: x86_64` | Use a physical device or Apple Silicon simulator — not Intel simulators |
+| Developer Mode disabled | iPhone Settings → Privacy & Security → Developer Mode |
+| App installs but won’t launch (Security / signature) | Settings → General → VPN & Device Management → Trust developer |
+| Missing `CFBundleIdentifier` | Ensure `apps/iosApp/iosApp/Info.plist` has CFBundle keys (already in repo) |
 | TV app looks like phone UI | Run `androidTvApp`, not `androidApp` |
-| Player black screen on demo | Confirm sample media URL / fake engine wiring for the target |
+| Player black screen on demo | Confirm stream URL / Media3 HLS (Android) or AVPlayer (iOS) wiring |

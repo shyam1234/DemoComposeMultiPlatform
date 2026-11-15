@@ -14,8 +14,8 @@ Verified against official JetBrains / Kotlin documentation (as of late 2025 / 20
 | Android Mobile | Stable | Stable CMP | — | Media3 ExoPlayer | Primary target |
 | Android Tablet | Stable | Stable CMP (adaptive) | — | Media3 | Primary target |
 | Android TV / STB | Stable | Stable CMP + TV UX | Optional Leanback bits | Media3 | Primary target |
-| iPhone | Stable | Stable CMP | — | AVPlayer | Supported (needs Xcode) |
-| iPad | Stable | Stable CMP (adaptive) | — | AVPlayer | Supported (needs Xcode) |
+| iPhone | Stable | Stable CMP | — | AVPlayer | Verified on device (Xcode + signing) |
+| iPad | Stable | Stable CMP (adaptive) | — | AVPlayer | Supported (same `iosApp`) |
 | macOS Desktop | Stable | Stable CMP Desktop | — | AVPlayer / desktop adapter | Primary JVM target |
 | Apple TV (tvOS) | KMP **Beta** | **Not official CMP** | **SwiftUI** | AVPlayer | Native UI + shared logic |
 | Web / Wasm | Beta | CMP Web Beta | — | — | **Out of scope** |
@@ -48,8 +48,9 @@ Implementation lives primarily in CMP with TV-specific components (`platform/and
 |---------|----------|--------|
 | JDK 17 (Homebrew) | Available | Android / Desktop builds |
 | Android SDK | Available (API 34–36) | Android app builds |
-| Full Xcode | Required for iOS | `apps/iosApp` + `platform/ios` scaffolded; build/run needs Xcode (not CLT) |
-| Apple Silicon vs x86 | Host may vary | Simulator target selection |
+| Full Xcode | Required for iOS | `apps/iosApp` + `platform/ios`; CLT alone is not enough |
+| Apple Silicon vs Intel | Host may vary | Device `iosArm64` OK; Apple Silicon sim OK; **Intel `x86_64` sim not supported** (no Compose `iosX64`) |
+| Device trust | Personal Team | Enable Developer Mode; Trust developer after first install |
 
 Anything not executed in CI/local is marked **unverified** in test reports — never claimed as passing.
 

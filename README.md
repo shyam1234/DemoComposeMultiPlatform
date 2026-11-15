@@ -66,7 +66,7 @@ flowchart TB
 
 - Kotlin **2.4.21** · Compose Multiplatform **1.11.1** (AGP 8.10 / compileSdk 36)
 - Coroutines · Serialization · Ktor · Koin
-- Media3 ExoPlayer (Android) · FakePlayerEngine (desktop/tests)
+- Media3 ExoPlayer (Android) · AVPlayer (iOS) · FakePlayerEngine (desktop/tests)
 - **iptv-org** free category M3U + categories JSON
 
 ## Demo data: free IPTV API
@@ -78,7 +78,7 @@ Live catalog from **iptv-org** (no key):
 
 See [IPTV_DATA_SOURCE.md](documentation/IPTV_DATA_SOURCE.md).
 
-## Run (Android OTT)
+## Run
 
 ```bash
 export JAVA_HOME=/usr/local/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home
@@ -86,6 +86,8 @@ export JAVA_HOME=/usr/local/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home
 ./gradlew :apps:androidTvApp:assembleDebug
 ./gradlew :apps:desktopApp:run
 ```
+
+**iOS:** open `apps/iosApp/iosApp.xcodeproj` in full Xcode, set a Development Team, run on a **physical device** (Intel simulators are not supported). Details: [BUILD_AND_RUN.md](documentation/BUILD_AND_RUN.md) · [apps/iosApp/README.md](apps/iosApp/README.md).
 
 ## Unit tests (executed)
 
@@ -97,7 +99,7 @@ export JAVA_HOME=/usr/local/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home
 
 ## Status
 
-Architecture docs + CMP foundation + IPTV-backed Home/Search/Details/Player/Watchlist demo are in place. Android phone/TV + Desktop are verified on this machine. **iOS** is scaffolded (`apps/iosApp` + `platform/ios` AVPlayer); open in full Xcode to build/run (CLT alone is not enough).
+Android phone/TV + Desktop + **iOS device** (CMP + AVPlayer) are verified. Shared phone UI (splash, bottom nav, hero/shelves, player) runs on iPhone via `OttShared`. Apple TV remains SwiftUI + shared KMP (not CMP UI).
 
 ## Official references
 
