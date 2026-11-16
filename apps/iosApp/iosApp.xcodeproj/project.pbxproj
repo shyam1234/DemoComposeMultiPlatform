@@ -209,6 +209,7 @@
 					"$(inherited)",
 					"-framework",
 					OttShared,
+					"-lsqlite3",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "$(BUNDLE_ID)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -241,6 +242,7 @@
 					"$(inherited)",
 					"-framework",
 					OttShared,
+					"-lsqlite3",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "$(BUNDLE_ID)";
 				PRODUCT_NAME = "$(TARGET_NAME)";

@@ -27,6 +27,7 @@ Managed in `gradle/libs.versions.toml`:
 - AGP **8.10.1**
 - Koin **4.1.0**
 - Ktor **3.1.3**
+- SQLDelight **2.4.1** (`:core:database`)
 - Media3 **1.7.1**
 
 ## Sync / assemble
@@ -92,7 +93,7 @@ Prebuild frameworks from the repo root:
 ./gradlew :apps:shared:linkDebugFrameworkIosSimulatorArm64   # Apple Silicon hosts
 ```
 
-Shared UI matches Android phone (`OttApp(isTv = false)`); playback uses `AvPlayerEngine` in `platform/ios`.
+Shared UI matches Android phone (`OttApp(isTv = false)`); playback uses `AvPlayerEngine` in `platform/ios`, and offline catalog/watchlist persistence uses SQLDelight (`NativeSqliteDriver`, linked with `-lsqlite3` in `apps/shared` and `apps/iosApp`).
 
 ### Apple TV
 

@@ -17,6 +17,7 @@ Shared business logic and shared UI power Android (phone, tablet, TV), iOS, and 
 | [TESTING_GUIDE.md](documentation/TESTING_GUIDE.md) | Unit, UI, and platform test strategy |
 | [BUILD_AND_RUN.md](documentation/BUILD_AND_RUN.md) | JDK, Gradle, run commands |
 | [ARCHITECTURE_DECISIONS.md](documentation/ARCHITECTURE_DECISIONS.md) | ADRs and trade-offs |
+| [FEASIBILITY_CHECK.md](documentation/FEASIBILITY_CHECK.md) | CMP UI, network, database & production readiness benchmarks |
 
 ## Architecture at a glance
 
@@ -35,7 +36,8 @@ flowchart TB
 
     subgraph Shared["Shared Kotlin"]
         Domain["Domain + Use cases"]
-        Data["Data + Mock catalog"]
+        Data["Data + Offline SQLite cache"]
+        Database["core/database (SQLDelight)"]
         Player["PlayerEngine contract"]
     end
 
@@ -66,6 +68,7 @@ flowchart TB
 
 - Kotlin **2.4.21** · Compose Multiplatform **1.11.1** (AGP 8.10 / compileSdk 36)
 - Coroutines · Serialization · Ktor · Koin
+- **SQLDelight 2.4.1** (`:core:database` — Android, iOS, Desktop SQLite drivers) for offline catalog caching & persistent watchlist
 - Media3 ExoPlayer (Android) · AVPlayer (iOS) · FakePlayerEngine (desktop/tests)
 - **iptv-org** free category M3U + categories JSON
 
@@ -92,14 +95,14 @@ export JAVA_HOME=/usr/local/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home
 ## Unit tests (executed)
 
 ```bash
-./gradlew :core:domain:desktopTest :core:data:desktopTest :core:player-api:desktopTest
+./gradlew :core:database:desktopTest :core:data:desktopTest :core:domain:desktopTest :core:player-api:desktopTest
 ```
 
-**Passed on this machine (9 tests):** Search/Home use cases, M3U parser, watchlist repo, PlayerController.
+**Passed on this machine:** Search/Home use cases, M3U parser, SQLDelight catalog & watchlist persistence, offline fallback repository, and PlayerController.
 
 ## Status
 
-Android phone/TV + Desktop + **iOS device** (CMP + AVPlayer) are verified. Shared phone UI (splash, bottom nav, hero/shelves, player) runs on iPhone via `OttShared`. Apple TV remains SwiftUI + shared KMP (not CMP UI).
+Android phone/TV + Desktop + **iOS device** (CMP + AVPlayer + SQLDelight offline cache) are verified. Shared phone UI (splash, bottom nav, hero/shelves, player) runs on Android and iPhone via `apps/shared` (`OttShared` on iOS) with 29 categories and 320 channels cached in `ott_platform.db` for offline browsing. Apple TV remains SwiftUI + shared KMP (not CMP UI).
 
 ## Official references
 

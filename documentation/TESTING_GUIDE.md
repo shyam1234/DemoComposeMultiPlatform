@@ -64,22 +64,27 @@ The repo should include sample tests for at least:
 ./gradlew :apps:desktopApp:test
 ```
 
-### Executed on this machine (2026-11-14)
+### Executed on this machine (2026-11-16)
 
 ```bash
-./gradlew :core:domain:desktopTest :core:data:desktopTest :features:home-impl:desktopTest
+./gradlew :core:database:desktopTest :core:data:desktopTest :core:domain:desktopTest --console=plain
 ```
 
 | Suite | Tests | Result |
 |-------|-------|--------|
+| `SqlDelightDataSourcesTest` | 2 | Passed |
+| `IptvCatalogRepositoryOfflineTest` | 1 | Passed |
+| `M3uPlaylistParserTest` | 2 | Passed |
+| `InMemoryWatchlistRepositoryTest` | 1 | Passed |
 | `SearchChannelsUseCaseTest` | 2 | Passed |
 | `GetHomeFeedUseCaseTest` | 2 | Passed |
 | `PlayerControllerTest` | 2 | Passed |
-| `M3uPlaylistParserTest` | 2 | Passed |
-| `InMemoryWatchlistRepositoryTest` | 1 | Passed |
-| `HomeViewModelTest` | 1 | Passed |
 
-Android debug APK also assembled: `apps/androidApp/build/outputs/apk/debug/androidApp-debug.apk`.
+Previously verified (`2026-11-14`): `HomeViewModelTest` (1 test passed via `:features:home-impl:desktopTest`).
+
+Also verified on physical devices (`2026-11-16`):
+- **iPhone 13 (`com.ott.platform.ios`)**: Built, installed, and launched via Xcode/devicectl; verified `ott_platform.db` cached 29 categories and 320 channels.
+- **Samsung Android Phone (`SM-A076B`, `com.ott.platform.android`)**: Installed via `:apps:androidApp:installDebug` and launched; verified `ott_platform.db` cached 29 categories and 320 channels.
 
 ## Test architecture diagram
 

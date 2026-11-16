@@ -1,8 +1,9 @@
 package com.ott.platform.di
 
 import com.ott.platform.data.iptv.IptvCatalogRemoteDataSource
-import com.ott.platform.data.repository.InMemoryWatchlistRepository
 import com.ott.platform.data.repository.IptvCatalogRepository
+import com.ott.platform.data.repository.PersistentWatchlistRepository
+import com.ott.platform.database.coreDatabaseModule
 import com.ott.platform.domain.repository.CatalogRepository
 import com.ott.platform.domain.repository.WatchlistRepository
 import com.ott.platform.domain.usecase.GetChannelDetailsUseCase
@@ -31,8 +32,14 @@ val coreNetworkModule = module {
 
 val coreDataModule = module {
     singleOf(::IptvCatalogRemoteDataSource)
-    singleOf(::IptvCatalogRepository) bind CatalogRepository::class
-    singleOf(::InMemoryWatchlistRepository) bind WatchlistRepository::class
+    single {
+        IptvCatalogRepository(
+            remote = get(),
+            logger = get(),
+            local = get(),
+        )
+    } bind CatalogRepository::class
+    singleOf(::PersistentWatchlistRepository) bind WatchlistRepository::class
 }
 
 val coreDomainModule = module {
@@ -53,6 +60,7 @@ val corePlayerModule = module {
 
 fun coreModules(): List<Module> = listOf(
     coreLoggingModule,
+    coreDatabaseModule,
     coreNetworkModule,
     coreDataModule,
     coreDomainModule,

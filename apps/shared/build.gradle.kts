@@ -16,6 +16,7 @@ kotlin {
         iosTarget.binaries.framework {
             baseName = "OttShared"
             isStatic = true
+            linkerOpts("-lsqlite3")
         }
     }
     jvm("desktop")

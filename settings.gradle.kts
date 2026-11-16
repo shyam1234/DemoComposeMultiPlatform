@@ -29,6 +29,7 @@ include(":apps:desktopApp")
 include(":apps:shared")
 
 include(":core:domain")
+include(":core:database")
 include(":core:data")
 include(":core:network")
 include(":core:designsystem")

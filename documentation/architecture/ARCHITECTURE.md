@@ -33,6 +33,7 @@ flowchart TB
 
     subgraph DomainCore["Shared Kotlin"]
         Domain["core/domain"]
+        Database["core/database<br/>SQLDelight"]
         Data["core/data"]
         PlayerApi["core/player-api"]
         DI["core/di"]
@@ -80,7 +81,7 @@ flowchart LR
 
     subgraph Data["Data"]
         RepoImpl["Repository impls"]
-        Mock["Mock / sample sources"]
+        LocalDb["SQLDelight offline DB"]
         Mappers["DTO ↔ Domain mappers"]
         Network["Ktor network"]
     end
@@ -88,7 +89,7 @@ flowchart LR
     subgraph PlatformLayer["Platform"]
         Exo["Media3 ExoPlayer"]
         AVP["AVPlayer"]
-        Storage["Secure storage"]
+        DbDrivers["SQLite drivers<br/>Android / Native / JDBC"]
     end
 
     Screens --> VMs
@@ -97,7 +98,8 @@ flowchart LR
     UseCases --> PlayerContract
     RepoImpl -.->|implements| RepoIfaces
     RepoImpl --> Network
-    RepoImpl --> Mock
+    RepoImpl --> LocalDb
+    LocalDb --> DbDrivers
     Exo -.->|implements| PlayerContract
     AVP -.->|implements| PlayerContract
 ```
@@ -243,3 +245,4 @@ Features are enabled by **explicit Koin registration** in the app shell, not by 
 | [TESTING_GUIDE.md](../TESTING_GUIDE.md) | Unit / UI / platform test strategy |
 | [BUILD_AND_RUN.md](../BUILD_AND_RUN.md) | Build & run commands |
 | [ARCHITECTURE_DECISIONS.md](../ARCHITECTURE_DECISIONS.md) | ADRs / trade-offs |
+| [FEASIBILITY_CHECK.md](../FEASIBILITY_CHECK.md) | CMP production feasibility & benchmarks |

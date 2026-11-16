@@ -74,17 +74,17 @@
 
 ---
 
-## ADR-006: Mock-first data layer
+## ADR-006: Mock-first data layer (evolved by ADR-010)
 
-**Status:** Accepted  
+**Status:** Superseded in part by ADR-010  
 
-**Context:** Demo must run without a real OTT backend or DRM.  
+**Context:** Initial demo needed to run without a real OTT backend or DRM.  
 
-**Decision:** Ship mock catalogs and in-memory watchlist/continue-watching; keep repository interfaces ready for remote/SQLDelight/Room later.  
+**Decision:** Initially shipped in-memory watchlist and remote-only catalog; kept repository interfaces ready for SQLDelight persistence.  
 
 **Consequences:**
-- Fast local demos and tests.
-- Persistence module deferred until needed (avoid empty modules).
+- Fast initial bring-up and unit tests.
+- Persistence was cleanly added in `:core:database` without changing `core/domain` or feature UI modules.
 
 ---
 
@@ -130,6 +130,21 @@
 
 ---
 
+## ADR-010: SQLDelight common database for offline catalog & watchlist
+
+**Status:** Accepted  
+
+**Context:** Users need persistent watchlist state and offline browsing of the previously fetched catalog when network connectivity is unavailable across Android, iOS, and Desktop.  
+
+**Decision:** Introduce `:core:database` using **SQLDelight 2.4.1** (`ott_platform.db`) with shared schema/queries/data sources in `commonMain` and platform SQLite drivers (`AndroidSqliteDriver`, `NativeSqliteDriver`, `JdbcSqliteDriver`). Bind `PersistentWatchlistRepository` and wire `CatalogLocalDataSource` into `IptvCatalogRepository` (6-hour freshness TTL + offline fallback on network failure). Use `kotlin.time.Clock.System` in common code for Kotlin/Native compatibility.  
+
+**Consequences:**
+- Single shared SQLite schema and reactive `Flow` watchlist across Android, Android TV, iOS, and Desktop.
+- Requires `-lsqlite3` linker flag for the static `OttShared` iOS framework.
+- Schema migration tests and encryption (if needed later) remain tracked in [FEASIBILITY_CHECK.md](FEASIBILITY_CHECK.md).
+
+---
+
 ## Trade-off summary
 
 | Choice | Benefit | Cost |
@@ -138,4 +153,4 @@
 | CMP everywhere official | Shared UX velocity | Not for tvOS UI |
 | SwiftUI on tvOS | Correct TV platform | Duplicate some screens |
 | Player abstraction | Swappable engines / testability | Extra interfaces |
-| Mock data | Zero backend | Not production CMS-integrated |
+| SQLDelight common DB | Shared offline cache + watchlist across targets | `-lsqlite3` iOS linking + migration discipline |

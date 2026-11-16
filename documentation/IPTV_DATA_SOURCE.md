@@ -27,6 +27,10 @@ Home shelves load these categories in parallel:
 - This is a **demo**, not a production IPTV service and does not redistribute video itself.
 - Prefer category M3U slices over full `channels.json` / `streams.json` (multi‑MB) for cold start.
 
+## Offline caching
+
+`IptvCatalogRepository` caches fetched categories and shelf playlists (40 channels per shelf) in the shared SQLDelight database (`ott_platform.db` in `:core:database`) with a **6-hour freshness TTL**. When offline or when remote fetches fail, cached categories, Home shelves, Search results, and Channel details are served from SQLite. Watchlist entries are also persisted in `ott_platform.db` via `PersistentWatchlistRepository`.
+
 ## Code map
 
 | Piece | Module |
@@ -34,4 +38,5 @@ Home shelves load these categories in parallel:
 | Endpoints | `core/data/.../IptvOrgEndpoints.kt` |
 | M3U parser | `core/data/.../M3uPlaylistParser.kt` |
 | Remote source | `core/data/.../IptvCatalogRemoteDataSource.kt` |
-| Repository | `core/data/.../IptvCatalogRepository.kt` |
+| Local DB & schema | `core/database/.../OttDatabase.sq`, `CatalogLocalDataSource.kt`, `WatchlistLocalDataSource.kt` |
+| Repositories | `core/data/.../IptvCatalogRepository.kt`, `PersistentWatchlistRepository.kt` |

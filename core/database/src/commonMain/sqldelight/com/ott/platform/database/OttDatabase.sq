@@ -1,0 +1,144 @@
+CREATE TABLE IF NOT EXISTS categories (
+    id TEXT NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT NOT NULL,
+    sort_order INTEGER NOT NULL,
+    updated_at_ms INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS channels (
+    id TEXT NOT NULL PRIMARY KEY,
+    title TEXT NOT NULL,
+    logo_url TEXT,
+    stream_url TEXT NOT NULL,
+    category_id TEXT NOT NULL,
+    category_name TEXT NOT NULL,
+    group_title TEXT NOT NULL,
+    is_geo_blocked INTEGER NOT NULL,
+    is_not_247 INTEGER NOT NULL,
+    quality TEXT,
+    tvg_id TEXT,
+    user_agent TEXT,
+    referrer TEXT,
+    shelf_order INTEGER NOT NULL,
+    updated_at_ms INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_channels_category_order
+ON channels(category_id, shelf_order);
+
+CREATE INDEX IF NOT EXISTS idx_channels_title
+ON channels(title);
+
+CREATE TABLE IF NOT EXISTS watchlist (
+    channel_id TEXT NOT NULL PRIMARY KEY,
+    title TEXT NOT NULL,
+    logo_url TEXT,
+    stream_url TEXT NOT NULL,
+    category_id TEXT NOT NULL,
+    category_name TEXT NOT NULL,
+    group_title TEXT NOT NULL,
+    is_geo_blocked INTEGER NOT NULL,
+    is_not_247 INTEGER NOT NULL,
+    quality TEXT,
+    tvg_id TEXT,
+    user_agent TEXT,
+    referrer TEXT,
+    added_at_ms INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_watchlist_added_at
+ON watchlist(added_at_ms);
+
+-- Categories queries
+selectAllCategories:
+SELECT id, name, description, sort_order, updated_at_ms
+FROM categories
+ORDER BY sort_order ASC;
+
+selectCategoriesUpdatedAt:
+SELECT MIN(updated_at_ms) AS oldest_updated_at
+FROM categories;
+
+upsertCategory:
+INSERT OR REPLACE INTO categories(id, name, description, sort_order, updated_at_ms)
+VALUES (?, ?, ?, ?, ?);
+
+deleteAllCategories:
+DELETE FROM categories;
+
+-- Channels queries
+selectChannelsByCategory:
+SELECT
+    id, title, logo_url, stream_url, category_id, category_name, group_title,
+    is_geo_blocked, is_not_247, quality, tvg_id, user_agent, referrer,
+    shelf_order, updated_at_ms
+FROM channels
+WHERE category_id = ?
+ORDER BY shelf_order ASC
+LIMIT ?;
+
+selectCategoryUpdatedAt:
+SELECT MIN(updated_at_ms) AS oldest_updated_at
+FROM channels
+WHERE category_id = ?;
+
+selectChannelById:
+SELECT
+    id, title, logo_url, stream_url, category_id, category_name, group_title,
+    is_geo_blocked, is_not_247, quality, tvg_id, user_agent, referrer,
+    shelf_order, updated_at_ms
+FROM channels
+WHERE id = ?
+LIMIT 1;
+
+searchChannels:
+SELECT
+    id, title, logo_url, stream_url, category_id, category_name, group_title,
+    is_geo_blocked, is_not_247, quality, tvg_id, user_agent, referrer,
+    shelf_order, updated_at_ms
+FROM channels
+WHERE title LIKE '%' || :query || '%' COLLATE NOCASE
+   OR category_name LIKE '%' || :query || '%' COLLATE NOCASE
+   OR group_title LIKE '%' || :query || '%' COLLATE NOCASE
+ORDER BY (logo_url IS NOT NULL) DESC, shelf_order ASC
+LIMIT :limit;
+
+countChannels:
+SELECT COUNT(*) FROM channels;
+
+upsertChannel:
+INSERT OR REPLACE INTO channels(
+    id, title, logo_url, stream_url, category_id, category_name, group_title,
+    is_geo_blocked, is_not_247, quality, tvg_id, user_agent, referrer,
+    shelf_order, updated_at_ms
+)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+deleteChannelsByCategory:
+DELETE FROM channels
+WHERE category_id = ?;
+
+-- Watchlist queries
+selectAllWatchlist:
+SELECT
+    channel_id, title, logo_url, stream_url, category_id, category_name, group_title,
+    is_geo_blocked, is_not_247, quality, tvg_id, user_agent, referrer, added_at_ms
+FROM watchlist
+ORDER BY added_at_ms ASC;
+
+existsInWatchlist:
+SELECT COUNT(*) > 0
+FROM watchlist
+WHERE channel_id = ?;
+
+upsertWatchlist:
+INSERT OR REPLACE INTO watchlist(
+    channel_id, title, logo_url, stream_url, category_id, category_name, group_title,
+    is_geo_blocked, is_not_247, quality, tvg_id, user_agent, referrer, added_at_ms
+)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+deleteFromWatchlist:
+DELETE FROM watchlist
+WHERE channel_id = ?;

@@ -23,6 +23,7 @@ flowchart TB
     Nav["core/navigation"]
     DI["core/di"]
     Data["core/data"]
+    Database["core/database"]
     Network["core/network"]
     PlayerApi["core/player-api"]
     Domain["core/domain"]
@@ -41,11 +42,15 @@ flowchart TB
     FeatApi --> Domain
     FeatApi --> Nav
     DI --> Data
+    DI --> Database
     DI --> Domain
     DI --> PlayerApi
     Data --> Domain
+    Data --> Database
     Data --> Network
     Data --> Logging
+    Database --> Domain
+    Database --> Logging
     Network --> Logging
     PlayerApi --> Domain
     Platform --> PlayerApi
@@ -67,6 +72,7 @@ flowchart TB
 | `core/domain` | anything outside Kotlin/coroutines/datetime | **Forbidden** |
 | `core/domain` | Compose / Android / iOS / Ktor | **Forbidden** |
 | `core/data` | Compose UI / feature screens | **Forbidden** |
+| `core/database` | Compose UI / feature screens / Ktor | **Forbidden** |
 | `core/ui` | `core/data` | **Forbidden** |
 | `apps/shared` | `features/*/impl` | Allowed (composition root) |
 | Platform player | `core/player-api` | Allowed (implements) |

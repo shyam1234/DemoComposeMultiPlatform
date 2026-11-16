@@ -13,7 +13,8 @@ OttPlatform/
 │   └── shared/              # Shared CMP App(), NavHost, DI wiring
 ├── core/
 │   ├── domain/              # Entities, use cases, repository interfaces
-│   ├── data/                # Repository impls, mappers, mock catalogs
+│   ├── database/            # SQLDelight schema, local data sources & platform drivers
+│   ├── data/                # Repository impls, mappers, offline cache & watchlist
 │   ├── network/             # Ktor client setup (demo-ready)
 │   ├── designsystem/        # Theme, typography, TV/mobile tokens
 │   ├── ui/                  # Shared composables (cards, rows, hero)
@@ -63,7 +64,8 @@ OttPlatform/
 | Module | Responsibility | Compose? |
 |--------|----------------|----------|
 | `core/domain` | Entities, use cases, repo interfaces | No |
-| `core/data` | Repo implementations, sample catalog | No |
+| `core/database` | SQLDelight `OttDatabase`, local data sources, Android/iOS/Desktop drivers | No |
+| `core/data` | Repo implementations, offline catalog cache, persistent watchlist | No |
 | `core/network` | Ktor HttpClient factory | No |
 | `core/player-api` | `PlayerEngine`, `PlayerState`, track contracts | No |
 | `core/designsystem` | Colors, type, spacing, TV tokens | Yes |
@@ -106,6 +108,7 @@ OttPlatform/
 :apps:desktopApp
 :apps:shared
 :core:domain
+:core:database
 :core:data
 :core:network
 :core:designsystem
@@ -129,7 +132,6 @@ OttPlatform/
 
 | Concern | Why folded |
 |---------|------------|
-| Separate Room/SQLDelight module | Demo uses in-memory / mock repos; add when persistence is real |
-| Per-feature database modules | Premature; keep data behind repository interfaces |
+| Per-feature database modules | Premature; keep shared persistence in `:core:database` behind repository interfaces |
 | Web / Wasm app | Out of OTT product scope for this demo |
 | Community CMP-tvOS UI | Unsupported officially; we use SwiftUI instead |

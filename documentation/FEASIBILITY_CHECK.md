@@ -2,7 +2,7 @@
 
 This document defines the **technical feasibility criteria, benchmark suite, and Go / No-Go scorecard** required to build full confidence before committing **Kotlin Multiplatform (KMP) + Compose Multiplatform (CMP)** to production.
 
-It combines general CMP production benchmarks with the current state observed in this POC (`Kotlin 2.4.21`, `CMP 1.11.1`, `Ktor 3.1.3`, `Koin 4.1.0`, `Coil 3.2.0`, `Media3 1.7.1`).
+It combines general CMP production benchmarks with the current state observed in this POC (`Kotlin 2.4.21`, `CMP 1.11.1`, `Ktor 3.1.3`, `Koin 4.1.0`, `SQLDelight 2.4.1`, `Coil 3.2.0`, `Media3 1.7.1`).
 
 ---
 
@@ -22,7 +22,7 @@ Before moving beyond POC, every pillar below should reach **Pass** or **Accepted
 |--------|--------------------|------------------------------|
 | **UI Support (CMP)** | Verified on Android, Android TV shell, Desktop JVM, and iOS device (`OttShared` static framework); tvOS scoped to SwiftUI | Frame pacing / scroll benchmarks on low-end Android & iOS, D-pad focus QA on TV, `RemoteImage` on Desktop (`Box` stub today), accessibility & IME edge cases |
 | **Network Support** | Ktor 3.1.3 wired (`OkHttp` Android, `Darwin` iOS, `CIO` Desktop) + `kotlinx.serialization` + `ktor-client-mock` tests | Auth token refresh, TLS cert pinning, HTTP disk cache, offline/reachability, retry/backoff policies |
-| **Database Support** | **Not implemented** (`InMemoryWatchlistRepository` only, per [ADR-006](ARCHITECTURE_DECISIONS.md)) | **Critical gap**: Must benchmark SQLDelight vs Room KMP, migrations, encryption, secure key-value storage, and batch query throughput |
+| **Database Support** | **SQLDelight 2.4.1 implemented** in `:core:database` (`AndroidSqliteDriver`, `NativeSqliteDriver`, `JdbcSqliteDriver`); offline catalog cache (29 categories / 320 channels verified on Android `SM-A076B` & `iPhone 13`) + `PersistentWatchlistRepository` + JVM tests (`SqlDelightDataSourcesTest`, `IptvCatalogRepositoryOfflineTest`) | Schema migration tests (`v1 -> v2`), 10k-row batch benchmarks, SQLCipher encryption (if needed), and secure Keystore/Keychain storage for auth/DRM tokens |
 | **Playback & Hardware** | `PlayerEngine` contract with Media3 (Android) & `AVPlayer` (iOS); `FakePlayerEngine` on Desktop/tests | DRM (Widevine / FairPlay), PiP, background audio & lock-screen controls, Chromecast / AirPlay |
 | **Observability & Ops** | `commonTest` runs on JVM (`desktopTest`) | Crash symbolication (iOS dSYM + K/N traces), startup/memory/IPA size budgets, CI macOS build times |
 
@@ -88,7 +88,7 @@ This POC already uses **Ktor 3.1.3** (`OkHttp` on Android, `Darwin` on iOS, `CIO
 
 ## 3. Database & Local Persistence Support Feasibility
 
-> **Status in this POC:** Database persistence is intentionally deferred ([ADR-006](ARCHITECTURE_DECISIONS.md)); `InMemoryWatchlistRepository` is in-memory only. **Database support MUST be prototyped and benchmarked before production commitment.**
+> **Status in this POC:** `:core:database` is now implemented with **SQLDelight 2.4.1** (`AndroidSqliteDriver`, `NativeSqliteDriver`, `JdbcSqliteDriver`), providing `PersistentWatchlistRepository` and offline catalog caching (`IptvCatalogRepository` with 6h TTL + offline fallback), verified on physical Android (`SM-A076B`), iPhone (`iPhone 13`), and JVM tests. Note: on Kotlin/Native iOS, use `kotlin.time.Clock.System` rather than `kotlinx.datetime.Clock.System` unless `kotlinx-datetime` linkage is aligned. Production hardening below (migrations, 10k-row throughput, encryption, and Keystore/Keychain) still needs formal benchmarking.
 
 ### 3.1 Candidate Storage Technologies
 
@@ -182,7 +182,7 @@ Use this scorecard to track PoC validation before greenlighting production devel
 | 3 | **CMP UI — Desktop (macOS)** | `RemoteImage` implemented (replace stub), keyboard/mouse UX, window resizing | `[ ] Pending` | `RemoteImage.desktop.kt` is currently a placeholder |
 | 4 | **Native UI Boundary (tvOS)** | SwiftUI consumes shared KMP `Flow`/use cases cleanly (SKIE/bridge verified) | `[ ] Pending` | Documented in ADR-002; needs SwiftUI spike |
 | 5 | **Networking (Ktor)** | Auth refresh, TLS pinning, offline/reachability, error mapping, JSON throughput verified on OkHttp + Darwin | `[ ] Pending` | Basic Ktor M3U/JSON + mock tests exist |
-| 6 | **Database & Migrations** | SQLDelight or Room KMP benchmarked (10k writes, reactive `Flow`, v1->v2 migration test) on Android + iOS | `[ ] Not Started` | Deferred in POC (ADR-006) — **top priority spike** |
+| 6 | **Database & Migrations** | SQLDelight or Room KMP benchmarked (10k writes, reactive `Flow`, v1->v2 migration test) on Android + iOS | `[~] Partial` | `:core:database` (SQLDelight 2.4.1) implemented & verified offline on Android (`SM-A076B`) + `iPhone 13` + JVM tests; migration & 10k-row stress benchmarks remain |
 | 7 | **Secure Storage** | Keystore (Android) + Keychain (iOS/tvOS) wrapper tested across app upgrades & reinstalls | `[ ] Not Started` | Required for auth/session tokens |
 | 8 | **Media & DRM** | Widevine + FairPlay, PiP, background playback, and `UIKitView`/ExoPlayer surface lifecycle leak-free | `[ ] Pending` | Clear-stream Media3/AVPlayer verified in POC |
 | 9 | **Startup, RAM & Binary Size** | Cold start `< 1.5s`, size delta `< 20 MB`, zero leaks in 20x player open/close stress test | `[ ] Pending` | Needs Macrobenchmark + Xcode Instruments run |
