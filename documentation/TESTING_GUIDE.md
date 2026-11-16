@@ -67,20 +67,21 @@ The repo should include sample tests for at least:
 ### Executed on this machine (2026-11-16)
 
 ```bash
-./gradlew :core:database:desktopTest :core:data:desktopTest :core:domain:desktopTest --console=plain
+./gradlew testDebugUnitTest desktopTest --console=plain
 ```
 
-| Suite | Tests | Result |
-|-------|-------|--------|
-| `SqlDelightDataSourcesTest` | 2 | Passed |
-| `IptvCatalogRepositoryOfflineTest` | 1 | Passed |
-| `M3uPlaylistParserTest` | 2 | Passed |
-| `InMemoryWatchlistRepositoryTest` | 1 | Passed |
-| `SearchChannelsUseCaseTest` | 2 | Passed |
-| `GetHomeFeedUseCaseTest` | 2 | Passed |
-| `PlayerControllerTest` | 2 | Passed |
+**Total:** 15 suites, **26 tests passed** (0 failures, 0 errors, 0 skipped):
 
-Previously verified (`2026-11-14`): `HomeViewModelTest` (1 test passed via `:features:home-impl:desktopTest`).
+| Suite | Target(s) | Tests | Result |
+|-------|-----------|-------|--------|
+| `SqlDelightDataSourcesTest` | `desktopTest` | 2 | Passed |
+| `IptvCatalogRepositoryOfflineTest` | `desktopTest`, `testDebugUnitTest` | 1 × 2 | Passed |
+| `M3uPlaylistParserTest` | `desktopTest`, `testDebugUnitTest` | 3 × 2 | Passed |
+| `InMemoryWatchlistRepositoryTest` | `desktopTest`, `testDebugUnitTest` | 1 × 2 | Passed |
+| `SearchChannelsUseCaseTest` | `desktopTest`, `testDebugUnitTest` | 2 × 2 | Passed |
+| `GetHomeFeedUseCaseTest` | `desktopTest`, `testDebugUnitTest` | 2 × 2 | Passed |
+| `PlayerControllerTest` | `desktopTest`, `testDebugUnitTest` | 2 × 2 | Passed |
+| `HomeViewModelTest` | `desktopTest`, `testDebugUnitTest` | 1 × 2 | Passed |
 
 Also verified on physical devices (`2026-11-16`):
 - **iPhone 13 (`com.ott.platform.ios`)**: Built, installed, and launched via Xcode/devicectl; verified `ott_platform.db` cached 29 categories and 320 channels.
