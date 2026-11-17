@@ -26,6 +26,7 @@ enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 include(":apps:androidApp")
 include(":apps:androidTvApp")
 include(":apps:desktopApp")
+include(":apps:webApp")
 include(":apps:shared")
 
 include(":core:domain")
@@ -50,3 +51,4 @@ listOf("home", "search", "details", "player", "watchlist").forEach { feature ->
 
 include(":platform:android")
 include(":platform:ios")
+include(":platform:web")

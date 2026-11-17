@@ -12,6 +12,10 @@ kotlin {
         iosArm64()
     iosSimulatorArm64()
     jvm("desktop")
+    @OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
+    wasmJs {
+        browser()
+    }
     sourceSets {
         commonMain.dependencies {
             implementation(projects.core.domain)
@@ -34,6 +38,12 @@ kotlin {
         commonTest.dependencies { implementation(libs.kotlin.test) }
         val desktopMain by getting {
             dependencies { implementation(compose.desktop.currentOs) }
+        }
+        val wasmJsMain by getting {
+            dependencies {
+                implementation(libs.coil.compose)
+                implementation(libs.coil.network.ktor)
+            }
         }
     }
 }

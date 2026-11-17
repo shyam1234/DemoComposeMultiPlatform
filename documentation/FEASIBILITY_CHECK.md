@@ -1,8 +1,8 @@
 # Compose Multiplatform (CMP) — Feasibility Check Result
 
-**Evaluation Date:** November 16, 2026  
+**Evaluation Date:** November 17, 2026  
 **POC Stack:** `Kotlin 2.4.21` · `Compose Multiplatform 1.11.1` · `AGP 8.10.1` · `Ktor 3.1.3` · `Koin 4.1.0` · `SQLDelight 2.4.1` · `Coil 3.2.0` · `Media3 1.7.1`  
-**Verified Hardware & Targets:** Samsung Android Phone (`SM-A076B`, Android 16), Apple `iPhone 13` (iOS 26.6, `arm64`), Android TV APK (`androidTvApp`), macOS Desktop (`JVM`), JVM Unit Test Runner
+**Verified Hardware & Targets:** Samsung Android Phone (`SM-A076B`, Android 16), Samsung Galaxy Tab (`SM_P613`), Smart TV (`192.168.1.24`, Android 11), Apple `iPhone 13` (iOS 26.6, `arm64`), Web (`wasmJs` in Chromium), macOS Desktop (`JVM`), JVM/Android Unit Test Runner
 
 ---
 
@@ -10,9 +10,9 @@
 
 | Pillar | Result | Confidence | Summary Finding |
 |--------|--------|------------|-----------------|
-| **UI Support (CMP)** | **FEASIBLE (Conditional)** | **High** (Mobile) / **Medium** (TV/Desktop) | Single shared Compose UI (`apps/shared` + `features/*/impl`) runs on **Android Phone, Android TV, Desktop JVM, and iPhone (`arm64`)**. **tvOS is NOT officially supported by CMP** and requires SwiftUI; Intel iOS simulators (`iosX64`) are dropped in CMP 1.11+. |
-| **Network Support (Ktor)** | **FEASIBLE (Verified)** | **High** | `Ktor 3.1.3` (`OkHttp` Android, `Darwin` iOS, `CIO` Desktop) + `kotlinx.serialization` successfully fetches live JSON + M3U playlists on real Android & iOS hardware. Enterprise features (token refresh, TLS pinning, reachability) are not yet built in this POC. |
-| **Database Support (SQLDelight)** | **FEASIBLE (Verified)** | **High** | `:core:database` (`SQLDelight 2.4.1`) runs a single shared SQLite schema across Android (`AndroidSqliteDriver`), iOS (`NativeSqliteDriver`), and Desktop (`JdbcSqliteDriver`). Verified **29 categories & 320 channels** cached on both physical Android & iPhone for offline browsing, plus persistent `Flow` watchlist. |
+| **UI Support (CMP)** | **FEASIBLE (Conditional)** | **High** (Mobile/Web) / **Medium** (TV/Desktop) | Single shared Compose UI (`apps/shared` + `features/*/impl`) runs on **Android Phone/Tablet, Android TV, Desktop JVM, Web (`wasmJs`), and iPhone (`arm64`)**. **tvOS is NOT officially supported by CMP** and requires SwiftUI; Intel iOS simulators (`iosX64`) are dropped in CMP 1.11+. |
+| **Network Support (Ktor)** | **FEASIBLE (Verified)** | **High** | `Ktor 3.1.3` (`OkHttp` Android, `Darwin` iOS, `CIO` Desktop, `Js` Web) + `kotlinx.serialization` successfully fetches live JSON + M3U playlists on real Android, iOS, and Web (`access-control-allow-origin: *` on `iptv-org.github.io`). Enterprise features (token refresh, TLS pinning, reachability) are not yet built in this POC. |
+| **Database Support (SQLDelight + Web `localStorage`)** | **FEASIBLE (Verified)** | **High** | `:core:database` (`SQLDelight 2.4.1`) runs a single shared SQLite schema across Android (`AndroidSqliteDriver`), iOS (`NativeSqliteDriver`), and Desktop (`JdbcSqliteDriver`), plus `localStorage` persistence on Web (`wasmJs`). Verified **29 categories & 320 channels** cached on Android Phone, Samsung Tab, iPhone 13, and Web browser. |
 | **Media Playback & Interop** | **FEASIBLE (Via Native Boundary)** | **High** | `PlayerEngine` abstraction + Compose `AndroidView` (`Media3`) and `UIKitView` (`AVPlayerLayer`) work on physical devices. Desktop uses `FakePlayerEngine`. DRM (Widevine/FairPlay) and PiP are not implemented in this POC. |
 | **Overall CMP Verdict** | **GO — With Documented Native Boundaries** | **High** | **Shared business logic, networking, and offline SQLite database are 100% shareable across all targets. Shared CMP UI is production-viable for Android Mobile/Tablet, iPhone/iPad, Android TV, and Desktop; keep Apple TV (`tvOS`) UI in native SwiftUI.** |
 
@@ -24,8 +24,9 @@
 
 | Target | UI Technology | Build & Runtime Result | Observed Findings |
 |--------|---------------|------------------------|-------------------|
-| **Android Mobile** (`apps/androidApp`) | Shared CMP (`OttApp(isTv = false)`) | **PASS** — Installed & launched on Samsung `SM-A076B` | Splash, bottom navigation, hero carousel, landscape/portrait shelves, search, details, watchlist, and `AndroidView` Media3 player render cleanly. |
-| **Android TV** (`apps/androidTvApp`) | Shared CMP (`OttApp(isTv = true)`) | **PASS (Build)** — `androidTvApp-debug.apk` assembled (`19 MB`) | Leanback manifest + `isTv = true` top menu, focus rings (`OttColors.Focus`), and 10-foot tokens implemented. Physical TV / D-pad hardware QA not yet executed. |
+| **Android Mobile & Tablet** (`apps/androidApp`) | Shared CMP (`OttApp(isTv = false)`) | **PASS** — Installed & launched on Samsung `SM-A076B` & Samsung Tab `SM_P613` | Splash, bottom navigation, hero carousel, landscape/portrait shelves, search, details, watchlist, and `AndroidView` Media3 player render cleanly. |
+| **Android TV** (`apps/androidTvApp`) | Shared CMP (`OttApp(isTv = true)`) | **PASS** — Installed & launched on `Smart TV` (`192.168.1.24`, Android 11) | Leanback manifest + `isTv = true` top menu, focus rings (`OttColors.Focus`), and 10-foot tokens implemented and running on TV hardware. |
+| **Web (`wasmJs`)** (`apps/webApp`) | Shared CMP (`ComposeViewport`) | **PASS** — Production Wasm bundle built & verified at `http://localhost:8080/` | Responsive layout (`isTv = maxWidth >= 840.dp`), Coil 3 images, `localStorage` offline cache, and HTML5 `<video>` + `hls.js` bridge (`BlendMode.Clear` canvas cutout). Note: third-party streams without browser CORS headers are blocked by browsers. |
 | **iPhone / iPad** (`apps/iosApp`, `iosArm64`) | Shared CMP (`ComposeUIViewController` + `OttShared`) | **PASS** — Built via Xcode 26.3, installed & launched on `iPhone 13` | Full phone UI + `UIKitView` (`AVPlayerLayer`) runs on physical device. Requires full Xcode, Apple signing team, and `-lsqlite3` linker flag. |
 | **iOS Simulator (Intel Mac)** (`iosX64`) | — | **UNSUPPORTED** | CMP `1.11.1` does not ship `iosX64` artifacts. Apple Silicon (`iosSimulatorArm64`) compiles; Intel Macs must run on a physical iPhone (`iosArm64`). |
 | **macOS Desktop** (`apps/desktopApp`, JVM) | Shared CMP (`Window`) | **PARTIAL** — Compiles cleanly (`compileKotlinDesktop` passes) | Shared screens compile and run on JVM, **except** `RemoteImage.desktop.kt` is currently a letter-placeholder box (Coil is wired on Android/iOS only) and `PlatformPlayerSurface.desktop.kt` is a stub. |
@@ -89,6 +90,7 @@
 | `apps/androidTvApp/build/outputs/apk/debug/androidTvApp-debug.apk` | **19 MB** | Unminified debug universal APK. |
 | `apps/shared/build/xcode-frameworks/Debug/iphoneos26.2/OttShared.framework` | **255 MB** | Unstripped static Kotlin/Native debug framework (`arm64`) used at Xcode link time. |
 | `iosApp.app` (`Debug-iphoneos`, `iosApp.debug.dylib`) | **62 MB** | Linked debug iOS app bundle installed on `iPhone 13` (includes Skia + Compose + KMP + SQLDelight). |
+| `apps/webApp/build/dist/wasmJs/productionExecutable` | **~14.7 MB** (uncompressed) | `ottWebApp.js` (`531 KB`), Wasm modules (`8.3 MB` + `4.4 MB`), `composeResources`, `index.html` (`5.2 KB`). |
 
 *Note: Release builds with R8/ProGuard (Android) and symbol stripping / dead-code stripping (iOS) are expected to be significantly smaller and were not measured in this debug POC.*
 

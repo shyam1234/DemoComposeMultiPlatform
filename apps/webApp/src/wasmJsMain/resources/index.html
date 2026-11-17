@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OTT Platform — Compose Multiplatform Web</title>
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: #000000;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        #ott-video-layer {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            display: none;
+            background: #000000;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+
+        #ott-video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: #000000;
+        }
+
+        #ott-compose-root {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js"></script>
+</head>
+<body>
+<div id="ott-video-layer">
+    <video id="ott-video" playsinline autoplay></video>
+</div>
+<div id="ott-compose-root"></div>
+
+<script>
+    (function () {
+        const layer = document.getElementById("ott-video-layer");
+        const video = document.getElementById("ott-video");
+        let hls = null;
+        let status = "idle";
+        let errorMessage = "";
+
+        function cleanupHls() {
+            if (hls) {
+                try { hls.destroy(); } catch (_) {}
+                hls = null;
+            }
+        }
+
+        video.addEventListener("loadstart", () => { if (status !== "error") status = "buffering"; });
+        video.addEventListener("waiting", () => { if (status !== "error") status = "buffering"; });
+        video.addEventListener("canplay", () => { if (status === "buffering" || status === "idle") status = "ready"; });
+        video.addEventListener("playing", () => { status = "playing"; errorMessage = ""; });
+        video.addEventListener("pause", () => { if (!video.ended && status !== "error") status = "paused"; });
+        video.addEventListener("ended", () => { status = "ended"; });
+        video.addEventListener("error", () => {
+            status = "error";
+            errorMessage = "Browser blocked or failed to load stream (CORS / mixed-content / offline stream).";
+        });
+
+        window.__ottWebPlayer = {
+            prepare(url) {
+                cleanupHls();
+                status = "buffering";
+                errorMessage = "";
+                try { video.pause(); } catch (_) {}
+                video.removeAttribute("src");
+                video.load();
+
+                if (!url) {
+                    status = "error";
+                    errorMessage = "Empty stream URL";
+                    return;
+                }
+
+                const isHls = url.toLowerCase().includes(".m3u8");
+                if (isHls && window.Hls && window.Hls.isSupported()) {
+                    hls = new window.Hls({ enableWorker: true });
+                    hls.on(window.Hls.Events.ERROR, (_, data) => {
+                        if (data && data.fatal) {
+                            status = "error";
+                            errorMessage = "HLS playback failed (" + (data.details || data.type || "CORS/network") + ")";
+                        }
+                    });
+                    hls.loadSource(url);
+                    hls.attachMedia(video);
+                } else {
+                    video.src = url;
+                }
+            },
+            play() {
+                if (status === "error") return;
+                const p = video.play();
+                if (p && typeof p.catch === "function") {
+                    p.catch(() => {
+                        status = "paused";
+                    });
+                }
+            },
+            pause() {
+                try { video.pause(); } catch (_) {}
+            },
+            seekTo(ms) {
+                if (Number.isFinite(video.duration) && video.duration > 0) {
+                    video.currentTime = Math.max(0, ms / 1000);
+                }
+            },
+            setVisible(visible) {
+                layer.style.display = visible ? "flex" : "none";
+            },
+            release() {
+                cleanupHls();
+                try { video.pause(); } catch (_) {}
+                video.removeAttribute("src");
+                video.load();
+                layer.style.display = "none";
+                status = "idle";
+                errorMessage = "";
+            },
+            getStatus() {
+                return status;
+            },
+            getPositionMs() {
+                return Number.isFinite(video.currentTime) ? video.currentTime * 1000 : 0;
+            },
+            getDurationMs() {
+                return Number.isFinite(video.duration) && video.duration > 0 ? video.duration * 1000 : 0;
+            },
+            getError() {
+                return errorMessage;
+            }
+        };
+    })();
+</script>
+<script type="application/javascript" src="ottWebApp.js"></script>
+</body>
+</html>

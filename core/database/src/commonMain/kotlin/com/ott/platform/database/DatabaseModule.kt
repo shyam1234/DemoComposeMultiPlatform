@@ -1,15 +1,13 @@
 package com.ott.platform.database
 
+import kotlinx.coroutines.CoroutineDispatcher
 import org.koin.core.module.Module
-import org.koin.dsl.module
 
 internal const val OTT_DATABASE_NAME = "ott_platform.db"
 
-expect fun platformDatabaseModule(): Module
+internal expect val databaseIoDispatcher: CoroutineDispatcher
 
-val coreDatabaseModule: Module = module {
-    includes(platformDatabaseModule())
-    single { OttDatabase(driver = get()) }
-    single<CatalogLocalDataSource> { SqlDelightCatalogLocalDataSource(database = get()) }
-    single<WatchlistLocalDataSource> { SqlDelightWatchlistLocalDataSource(database = get()) }
-}
+internal expect fun createDatabaseModule(): Module
+
+val coreDatabaseModule: Module
+    get() = createDatabaseModule()

@@ -37,6 +37,7 @@ Managed in `gradle/libs.versions.toml`:
 ./gradlew :apps:androidApp:assembleDebug
 ./gradlew :apps:androidTvApp:assembleDebug
 ./gradlew :apps:desktopApp:compileKotlinDesktop
+./gradlew :apps:webApp:wasmJsBrowserDistribution
 ```
 
 ## Run targets
@@ -63,6 +64,23 @@ Use an Android TV emulator or device. Verify D-pad focus, not touch-only flows.
 ```bash
 ./gradlew :apps:desktopApp:run
 ```
+
+### Web (`wasmJs` — Compose Multiplatform Web)
+
+Build the production Wasm bundle or start the webpack dev server:
+
+```bash
+# Production static bundle (output: apps/webApp/build/dist/wasmJs/productionExecutable)
+./gradlew :apps:webApp:wasmJsBrowserDistribution
+
+# Serve locally on http://localhost:8080/
+python3 -m http.server 8080 --directory apps/webApp/build/dist/wasmJs/productionExecutable
+
+# Or webpack dev server:
+./gradlew :apps:webApp:wasmJsBrowserDevelopmentRun
+```
+
+The GitHub Actions workflow `.github/workflows/deploy-web.yml` deploys `productionExecutable` to GitHub Pages (`https://shyam1234.github.io/DemoComposeMultiPlatform/`). Offline catalog caching and watchlist persistence on Web use `window.localStorage`, and playback uses HTML5 `<video>` + `hls.js`.
 
 ### iOS
 

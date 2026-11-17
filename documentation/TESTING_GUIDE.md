@@ -83,9 +83,12 @@ The repo should include sample tests for at least:
 | `PlayerControllerTest` | `desktopTest`, `testDebugUnitTest` | 2 × 2 | Passed |
 | `HomeViewModelTest` | `desktopTest`, `testDebugUnitTest` | 1 × 2 | Passed |
 
-Also verified on physical devices (`2026-11-16`):
+Also verified on physical devices & Web (`2026-11-16` / `2026-11-17`):
 - **iPhone 13 (`com.ott.platform.ios`)**: Built, installed, and launched via Xcode/devicectl; verified `ott_platform.db` cached 29 categories and 320 channels.
 - **Samsung Android Phone (`SM-A076B`, `com.ott.platform.android`)**: Installed via `:apps:androidApp:installDebug` and launched; verified `ott_platform.db` cached 29 categories and 320 channels.
+- **Samsung Galaxy Tab (`SM_P613`, `com.ott.platform.android`)**: Installed via `:apps:androidApp:installDebug` and launched; verified `ott_platform.db` cached 29 categories and 320 channels.
+- **Smart TV (`192.168.1.24:5555`, `com.ott.platform.androidtv`)**: Installed via `:apps:androidTvApp:assembleDebug` and launched `TvMainActivity`.
+- **Web (`wasmJs`, `apps/webApp`)**: Built production Wasm bundle (`:apps:webApp:wasmJsBrowserDistribution`), served on `http://localhost:8080/`, and verified Home UI + Coil images + `localStorage` offline caching (`ott_web_categories_v1`, `ott_web_shelves_v1`) in browser.
 
 ## Test architecture diagram
 

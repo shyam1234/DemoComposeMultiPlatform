@@ -9,9 +9,13 @@ kotlin {
     applyDefaultHierarchyTemplate()
     androidTarget()
 
-        iosArm64()
+    iosArm64()
     iosSimulatorArm64()
     jvm("desktop")
+    @OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
+    wasmJs {
+        browser()
+    }
     sourceSets {
         commonMain.dependencies {
             implementation(projects.features.playerApi)
@@ -49,6 +53,11 @@ kotlin {
         }
         val desktopMain by getting {
             dependencies { implementation(compose.desktop.currentOs) }
+        }
+        val wasmJsMain by getting {
+            dependencies {
+                implementation(projects.platform.web)
+            }
         }
     }
 }

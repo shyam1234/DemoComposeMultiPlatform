@@ -6,8 +6,6 @@ import com.ott.platform.domain.model.ContentId
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
 import kotlinx.coroutines.withContext
 
 interface CatalogLocalDataSource {
@@ -27,7 +25,7 @@ interface CatalogLocalDataSource {
 @OptIn(ExperimentalTime::class)
 class SqlDelightCatalogLocalDataSource(
     private val database: OttDatabase,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val ioDispatcher: CoroutineDispatcher = databaseIoDispatcher,
     private val nowMs: () -> Long = { Clock.System.now().toEpochMilliseconds() },
 ) : CatalogLocalDataSource {
 

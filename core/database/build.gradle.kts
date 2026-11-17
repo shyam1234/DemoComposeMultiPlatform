@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidLibrary)
+    alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.sqldelight)
 }
 
@@ -11,6 +12,10 @@ kotlin {
     iosArm64()
     iosSimulatorArm64()
     jvm("desktop")
+    @OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
+    wasmJs {
+        browser()
+    }
 
     sourceSets {
         commonMain.dependencies {
@@ -41,6 +46,12 @@ kotlin {
         val desktopTest by getting {
             dependencies {
                 implementation(libs.sqldelight.sqlite.driver)
+            }
+        }
+        val wasmJsMain by getting {
+            dependencies {
+                implementation(libs.kotlinx.serialization.json)
+                implementation(libs.kotlinx.browser)
             }
         }
     }

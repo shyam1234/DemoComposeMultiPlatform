@@ -21,6 +21,7 @@ flowchart TB
         AndroidApp["androidApp<br/>Phone / Tablet"]
         AndroidTv["androidTvApp<br/>Android TV"]
         Desktop["desktopApp<br/>macOS Desktop CMP"]
+        WebApp["webApp<br/>Web Wasm CMP"]
         Ios["iosApp<br/>iPhone / iPad CMP"]
         AppleTv["appleTvApp<br/>SwiftUI + shared KMP"]
     end
@@ -43,6 +44,7 @@ flowchart TB
         PAndroid["platform/android<br/>Media3"]
         PIos["platform/ios<br/>AVPlayer"]
         PMac["platform/macos<br/>AVPlayer"]
+        PWeb["platform/web<br/>HTML5 video + hls.js"]
         PAtv["platform/androidtv<br/>TV focus helpers"]
         PTvos["platform/tvos<br/>AVPlayer bridge"]
     end
@@ -50,6 +52,7 @@ flowchart TB
     AndroidApp --> Shared
     AndroidTv --> Shared
     Desktop --> Shared
+    WebApp --> Shared
     Ios --> Shared
     AppleTv --> DomainCore
     AppleTv --> PTvos
@@ -121,6 +124,7 @@ flowchart LR
 | Android TV | **CMP** | Dedicated TV focus / D-pad UX |
 | iPhone / iPad | **CMP** | Official stable CMP iOS |
 | macOS Desktop | **CMP Desktop (JVM)** | Window + keyboard/mouse |
+| Web (`wasmJs`) | **CMP Web (Wasm)** | Responsive (`>= 840dp` top nav, `< 840dp` bottom nav) + `hls.js` |
 | Apple TV (tvOS) | **SwiftUI** | CMP does **not** officially support tvOS UI |
 
 Shared Kotlin (domain, data, player contracts, use cases) is reused on tvOS via a KMP framework. UI for Apple TV is native.

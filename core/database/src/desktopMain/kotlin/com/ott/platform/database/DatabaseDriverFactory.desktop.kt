@@ -5,13 +5,20 @@ import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import java.io.File
 import java.util.Properties
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import org.koin.core.module.Module
 import org.koin.dsl.module
 
-actual fun platformDatabaseModule(): Module = module {
+internal actual val databaseIoDispatcher: CoroutineDispatcher = Dispatchers.IO
+
+internal actual fun createDatabaseModule(): Module = module {
     single<SqlDriver> {
         createDesktopSqlDriver()
     }
+    single { OttDatabase(driver = get()) }
+    single<CatalogLocalDataSource> { SqlDelightCatalogLocalDataSource(database = get()) }
+    single<WatchlistLocalDataSource> { SqlDelightWatchlistLocalDataSource(database = get()) }
 }
 
 internal fun createDesktopSqlDriver(dbFile: File = defaultDesktopDbFile()): SqlDriver {

@@ -8,6 +8,7 @@ OttPlatform/
 │   ├── androidApp/          # Phone + tablet entry (CMP)
 │   ├── androidTvApp/        # Android TV entry (CMP + TV UX)
 │   ├── desktopApp/          # macOS Desktop entry (CMP Desktop)
+│   ├── webApp/              # Web Wasm entry (ComposeViewport + hls.js)
 │   ├── iosApp/              # Xcode shell hosting CMP UI
 │   ├── appleTvApp/          # SwiftUI shell + shared KMP logic
 │   └── shared/              # Shared CMP App(), NavHost, DI wiring
@@ -37,6 +38,7 @@ OttPlatform/
 ├── platform/
 │   ├── android/             # Media3 PlayerEngine, Android helpers
 │   ├── ios/                 # AVPlayer expect/actual / bridge
+│   ├── web/                 # WebPlayerEngine (HTML5 video + hls.js)
 │   ├── macos/               # Desktop player / desktop helpers
 │   ├── androidtv/           # TV focus / remote helpers
 │   └── tvos/                # tvOS player bridge for SwiftUI app
@@ -56,6 +58,7 @@ OttPlatform/
 | `apps/androidApp` | Android Activity / Application; phone & tablet |
 | `apps/androidTvApp` | Leanback/TV Activity; D-pad first |
 | `apps/desktopApp` | `main()` Compose Desktop window |
+| `apps/webApp` | `ComposeViewport` Wasm browser shell + `hls.js` host |
 | `apps/iosApp` | Xcode project embedding shared CMP |
 | `apps/appleTvApp` | Native tvOS UI; consumes KMP framework |
 
@@ -96,6 +99,7 @@ OttPlatform/
 |--------|------------|
 | `platform/android` | Media3 `PlayerEngine`, Android secure storage hooks |
 | `platform/ios` | AVPlayer-backed `PlayerEngine` |
+| `platform/web` | HTML5 `<video>` + `hls.js`-backed `WebPlayerEngine` |
 | `platform/macos` | Desktop player adapter |
 | `platform/androidtv` | Focus traversal helpers, TV metrics |
 | `platform/tvos` | Shared logic + AVPlayer for SwiftUI |
@@ -106,6 +110,7 @@ OttPlatform/
 :apps:androidApp
 :apps:androidTvApp
 :apps:desktopApp
+:apps:webApp
 :apps:shared
 :core:domain
 :core:database
@@ -123,6 +128,7 @@ OttPlatform/
 … (same pattern for each feature)
 :platform:android
 :platform:ios
+:platform:web
 :platform:macos
 :platform:androidtv
 :platform:tvos
@@ -133,5 +139,4 @@ OttPlatform/
 | Concern | Why folded |
 |---------|------------|
 | Per-feature database modules | Premature; keep shared persistence in `:core:database` behind repository interfaces |
-| Web / Wasm app | Out of OTT product scope for this demo |
 | Community CMP-tvOS UI | Unsupported officially; we use SwiftUI instead |

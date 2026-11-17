@@ -4,10 +4,14 @@ import android.content.Context
 import androidx.sqlite.db.SupportSQLiteDatabase
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import org.koin.core.module.Module
 import org.koin.dsl.module
 
-actual fun platformDatabaseModule(): Module = module {
+internal actual val databaseIoDispatcher: CoroutineDispatcher = Dispatchers.IO
+
+internal actual fun createDatabaseModule(): Module = module {
     single<SqlDriver> {
         val context: Context = get()
         AndroidSqliteDriver(
@@ -22,4 +26,7 @@ actual fun platformDatabaseModule(): Module = module {
             },
         )
     }
+    single { OttDatabase(driver = get()) }
+    single<CatalogLocalDataSource> { SqlDelightCatalogLocalDataSource(database = get()) }
+    single<WatchlistLocalDataSource> { SqlDelightWatchlistLocalDataSource(database = get()) }
 }

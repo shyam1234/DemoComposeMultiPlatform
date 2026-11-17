@@ -7,8 +7,6 @@ import com.ott.platform.domain.model.ContentId
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
@@ -24,7 +22,7 @@ interface WatchlistLocalDataSource {
 @OptIn(ExperimentalTime::class)
 class SqlDelightWatchlistLocalDataSource(
     private val database: OttDatabase,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val ioDispatcher: CoroutineDispatcher = databaseIoDispatcher,
     private val nowMs: () -> Long = { Clock.System.now().toEpochMilliseconds() },
 ) : WatchlistLocalDataSource {
 

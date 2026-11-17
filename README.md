@@ -2,7 +2,7 @@
 
 Modular, production-oriented **OTT streaming demo** built with **Kotlin Multiplatform** and **Compose Multiplatform (CMP)**.
 
-Shared business logic and shared UI power Android (phone, tablet, TV), iOS, and macOS Desktop. **Apple TV uses SwiftUI** for UI (CMP does not officially support tvOS) while reusing Kotlin domain/data/player contracts.
+Shared business logic and shared UI power Android (phone, tablet, TV), iOS, macOS Desktop, and **Web (`wasmJs`)**. **Apple TV uses SwiftUI** for UI (CMP does not officially support tvOS) while reusing Kotlin domain/data/player contracts.
 
 ## Start here — architecture docs
 
@@ -28,6 +28,7 @@ flowchart TB
         ATV["Android TV"]
         iOS["iPhone/iPad"]
         Mac["macOS Desktop"]
+        Web["Web (wasmJs)"]
     end
 
     subgraph Native["Native UI"]
@@ -45,6 +46,7 @@ flowchart TB
     ATV --> Shared
     iOS --> Shared
     Mac --> Shared
+    Web --> Shared
     tvOS --> Shared
 ```
 
@@ -68,8 +70,8 @@ flowchart TB
 
 - Kotlin **2.4.21** · Compose Multiplatform **1.11.1** (AGP 8.10 / compileSdk 36)
 - Coroutines · Serialization · Ktor · Koin
-- **SQLDelight 2.4.1** (`:core:database` — Android, iOS, Desktop SQLite drivers) for offline catalog caching & persistent watchlist
-- Media3 ExoPlayer (Android) · AVPlayer (iOS) · FakePlayerEngine (desktop/tests)
+- **SQLDelight 2.4.1** (`:core:database` — Android, iOS, Desktop SQLite drivers) + `localStorage` persistence on Web (`wasmJs`) for offline catalog caching & persistent watchlist
+- Media3 ExoPlayer (Android) · AVPlayer (iOS) · HTML5 `<video>` + `hls.js` (`platform/web`) · FakePlayerEngine (desktop/tests)
 - **iptv-org** free category M3U + categories JSON
 
 ## Demo data: free IPTV API
@@ -88,7 +90,10 @@ export JAVA_HOME=/usr/local/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home
 ./gradlew :apps:androidApp:assembleDebug
 ./gradlew :apps:androidTvApp:assembleDebug
 ./gradlew :apps:desktopApp:run
+./gradlew :apps:webApp:wasmJsBrowserDistribution
 ```
+
+**Web (`wasmJs`):** serves at `http://localhost:8080/` locally and deploys to GitHub Pages via `.github/workflows/deploy-web.yml` (`https://shyam1234.github.io/DemoComposeMultiPlatform/`).
 
 **iOS:** open `apps/iosApp/iosApp.xcodeproj` in full Xcode, set a Development Team, run on a **physical device** (Intel simulators are not supported). Details: [BUILD_AND_RUN.md](documentation/BUILD_AND_RUN.md) · [apps/iosApp/README.md](apps/iosApp/README.md).
 
@@ -102,7 +107,7 @@ export JAVA_HOME=/usr/local/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home
 
 ## Status
 
-Android phone/TV + Desktop + **iOS device** (CMP + AVPlayer + SQLDelight offline cache) are verified. Shared phone UI (splash, bottom nav, hero/shelves, player) runs on Android and iPhone via `apps/shared` (`OttShared` on iOS) with 29 categories and 320 channels cached in `ott_platform.db` for offline browsing. Apple TV remains SwiftUI + shared KMP (not CMP UI).
+Android phone/tablet/TV + Desktop + **Web (`wasmJs`)** + **iOS device** (CMP + AVPlayer + SQLDelight offline cache) are verified. Shared UI (splash, responsive top/bottom nav, hero/shelves, search, details, watchlist, player) runs on Android, iPhone, and Web (`apps/webApp` via `OttShared` / `apps/shared`), with 29 categories and 320 channels cached offline (`ott_platform.db` on native, `localStorage` on Web). Apple TV remains SwiftUI + shared KMP (not CMP UI).
 
 ## Official references
 

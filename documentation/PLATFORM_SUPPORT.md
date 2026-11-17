@@ -18,7 +18,7 @@ Verified against official JetBrains / Kotlin documentation (as of late 2025 / 20
 | iPad | Stable | Stable CMP (adaptive) | — | AVPlayer | Supported (same `iosApp`) |
 | macOS Desktop | Stable | Stable CMP Desktop | — | AVPlayer / desktop adapter | Primary JVM target |
 | Apple TV (tvOS) | KMP **Beta** | **Not official CMP** | **SwiftUI** | AVPlayer | Native UI + shared logic |
-| Web / Wasm | Beta | CMP Web Beta | — | — | **Out of scope** |
+| Web / Wasm (`wasmJs`) | Beta / Experimental | CMP Web (`ComposeViewport`) | — | HTML5 `<video>` + `hls.js` | **Verified** (`apps/webApp`, GitHub Pages) |
 | watchOS | Beta | No | — | — | **Out of scope** |
 
 ## Important disclosures
@@ -63,6 +63,7 @@ Anything not executed in CI/local is marked **unverified** in test reports — n
 | Android TV | Top tabs / side nav | D-pad | Landscape shelves, focus |
 | iPhone / iPad | Tab / stack | Touch | Safe areas, adaptive |
 | macOS | Side nav / top bar | Mouse + keyboard | Wide window layouts |
+| Web (`wasmJs`) | Responsive (top bar >= 840dp, bottom bar < 840dp) | Mouse + keyboard / touch | Wide OTT shelves or mobile column |
 | Apple TV | Tab bar / focus engine | Siri Remote | SwiftUI TV layouts |
 
 ## Official links to keep nearby
