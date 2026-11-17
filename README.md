@@ -4,6 +4,14 @@ Modular, production-oriented **OTT streaming demo** built with **Kotlin Multipla
 
 Shared business logic and shared UI power Android (phone, tablet, TV), iOS, macOS Desktop, and **Web (`wasmJs`)**. **Apple TV uses SwiftUI** for UI (CMP does not officially support tvOS) while reusing Kotlin domain/data/player contracts.
 
+## Demo Video (5 Platforms Running Together)
+
+> **Live Web App:** [https://shyam1234.github.io/DemoComposeMultiPlatform/](https://shyam1234.github.io/DemoComposeMultiPlatform/)
+
+[![OttPlatform — Compose Multiplatform Demo across Web, Android TV, Android Tablet, Android Phone, and iPhone](documentation/media/demo-poster.png)](https://github.com/shyam1234/DemoComposeMultiPlatform/blob/main/documentation/media/final-demo-with-web.mp4)
+
+- **Watch / Download Full Demo Video (1080p MP4):** [`documentation/media/final-demo-with-web.mp4`](documentation/media/final-demo-with-web.mp4) ([Direct raw MP4](https://github.com/shyam1234/DemoComposeMultiPlatform/raw/main/documentation/media/final-demo-with-web.mp4))
+
 ## Start here — architecture docs
 
 | Document | What you’ll learn |
