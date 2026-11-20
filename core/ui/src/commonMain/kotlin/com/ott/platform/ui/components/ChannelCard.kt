@@ -32,9 +32,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.ott.platform.designsystem.OttColors
 import com.ott.platform.designsystem.OttDimens
 import com.ott.platform.domain.model.Channel
+import com.ott.platform.domain.model.RailContentType
 import com.ott.platform.domain.model.ShelfCardStyle
 
 @Composable
@@ -44,6 +46,9 @@ fun ChannelCard(
     modifier: Modifier = Modifier,
     focused: Boolean = false,
     style: ShelfCardStyle = ShelfCardStyle.Landscape,
+    contentType: RailContentType = RailContentType.Generic,
+    rawDisplayType: String? = null,
+    rank: Int? = null,
     isTv: Boolean = false,
 ) {
     val (width, height) = when (style) {
@@ -53,6 +58,12 @@ fun ChannelCard(
         ShelfCardStyle.Portrait ->
             if (isTv) OttDimens.TvPortraitCardWidth to OttDimens.TvPortraitCardHeight
             else OttDimens.PortraitCardWidth to OttDimens.PortraitCardHeight
+        ShelfCardStyle.Square ->
+            if (isTv) OttDimens.TvSquareCardSize to OttDimens.TvSquareCardSize
+            else OttDimens.SquareCardSize to OttDimens.SquareCardSize
+        ShelfCardStyle.Banner ->
+            if (isTv) OttDimens.TvBannerCardWidth to OttDimens.TvBannerCardHeight
+            else OttDimens.BannerCardWidth to OttDimens.BannerCardHeight
     }
     ChannelCard(
         channel = channel,
@@ -62,12 +73,16 @@ fun ChannelCard(
         width = width,
         height = height,
         style = style,
+        contentType = contentType,
+        rawDisplayType = rawDisplayType,
+        rank = rank,
         isTv = isTv,
     )
 }
 
 /**
- * Leanback-style card: no border when idle; bright blue outer ring when focused.
+ * Leanback-style card with full-bleed CMS artwork, adaptive aspect ratio,
+ * Top 10 rank overlay, and crisp blue focus ring on TV.
  */
 @Composable
 fun ChannelCard(
@@ -78,6 +93,9 @@ fun ChannelCard(
     width: Dp,
     height: Dp,
     style: ShelfCardStyle = ShelfCardStyle.Landscape,
+    contentType: RailContentType = RailContentType.Generic,
+    rawDisplayType: String? = null,
+    rank: Int? = null,
     isTv: Boolean = false,
 ) {
     var hasFocus by remember { mutableStateOf(false) }
@@ -85,11 +103,13 @@ fun ChannelCard(
     val ringGap = 3.dp
     val shape = RoundedCornerShape(OttDimens.CardCorner)
     val outerShape = RoundedCornerShape(OttDimens.CardCorner + 2.dp)
-    val imageScale = when (style) {
-        ShelfCardStyle.Portrait -> ContentScale.Crop
-        ShelfCardStyle.Landscape -> ContentScale.Fit
-    }
     val interaction = remember { MutableInteractionSource() }
+    val imageUrl = remember(channel.id, channel.images, rawDisplayType, style, contentType) {
+        channel.imageForRail(
+            rawDisplayType = rawDisplayType ?: style.name,
+            contentType = contentType,
+        )
+    }
 
     Column(
         modifier = modifier
@@ -120,48 +140,92 @@ fun ChannelCard(
                 modifier = Modifier
                     .fillMaxSize()
                     .clip(shape)
-                    .background(Color.Black),
+                    .background(OttColors.SurfaceElevated),
             ) {
                 RemoteImage(
-                    url = channel.logoUrl,
+                    url = imageUrl,
                     contentDescription = channel.title,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .then(
-                            if (style == ShelfCardStyle.Landscape) {
-                                Modifier.padding(if (isTv) 12.dp else 6.dp)
-                            } else {
-                                Modifier
-                            },
-                        ),
-                    contentScale = imageScale,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
                 )
-                if (style == ShelfCardStyle.Portrait) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .fillMaxWidth()
-                            .height(48.dp)
-                            .background(
-                                Brush.verticalGradient(
-                                    listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f)),
-                                ),
+
+                // Bottom gradient scrim for rank / editorial / badge legibility
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .height(52.dp)
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(Color.Transparent, Color.Black.copy(alpha = 0.78f)),
                             ),
+                        ),
+                )
+
+                if (rank != null) {
+                    Text(
+                        text = "$rank",
+                        color = Color.White,
+                        fontSize = if (isTv) 34.sp else 26.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(horizontal = 10.dp, vertical = 4.dp),
+                    )
+                }
+
+                if (channel.isPlayable) {
+                    Text(
+                        text = "▶",
+                        color = Color.White,
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(OttColors.Accent.copy(alpha = 0.9f))
+                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                    )
+                } else if (channel.parentalRating != null) {
+                    Text(
+                        text = channel.parentalRating!!,
+                        color = Color.White,
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(Color.Black.copy(alpha = 0.65f))
+                            .padding(horizontal = 5.dp, vertical = 2.dp),
                     )
                 }
             }
         }
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = channel.title,
             style = MaterialTheme.typography.bodyMedium,
             color = Color.White,
             fontWeight = if (isFocused) FontWeight.SemiBold else FontWeight.Normal,
-            maxLines = 2,
+            maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier
-                .width(width)
-                .height(OttDimens.CardTitleHeight),
+            modifier = Modifier.width(width),
         )
+        val subtitle = remember(channel.genres, channel.releaseYear, channel.assetType) {
+            listOfNotNull(
+                channel.releaseYear,
+                channel.genres.firstOrNull(),
+            ).joinToString(" · ")
+        }
+        if (subtitle.isNotEmpty()) {
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.labelSmall,
+                color = OttColors.OnSurfaceMuted,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.width(width),
+            )
+        }
     }
 }

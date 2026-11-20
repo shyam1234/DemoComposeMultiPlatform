@@ -10,7 +10,8 @@ Read in this order if you are new to the project:
 6. [FEATURE_EXTRACTION_GUIDE.md](FEATURE_EXTRACTION_GUIDE.md) — modularity in practice  
 7. [TESTING_GUIDE.md](TESTING_GUIDE.md) — how we verify  
 8. [BUILD_AND_RUN.md](BUILD_AND_RUN.md) — how to build  
-9. [ARCHITECTURE_DECISIONS.md](ARCHITECTURE_DECISIONS.md) — why we chose this  
-10. [FEASIBILITY_CHECK.md](FEASIBILITY_CHECK.md) — CMP UI, network, database & production readiness benchmarks  
+9. [API.md](API.md) — Play-CMS API definitions, extensibility & job roles  
+10. [ARCHITECTURE_DECISIONS.md](ARCHITECTURE_DECISIONS.md) — why we chose this  
+11. [FEASIBILITY_CHECK.md](FEASIBILITY_CHECK.md) — CMP UI, network, database & production readiness benchmarks  
 
 Diagrams are embedded as Mermaid in the docs above (`documentation/diagrams/` can hold exported images later if needed).

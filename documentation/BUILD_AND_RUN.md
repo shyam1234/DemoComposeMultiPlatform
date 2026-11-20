@@ -133,7 +133,7 @@ See [TESTING_GUIDE.md](TESTING_GUIDE.md).
 
 ## Demo content
 
-Live catalog from **iptv-org** (free public M3U / categories JSON). Stream availability varies by region and upstream CDN. No DRM license server is required for the demo.
+Live dynamic OTT catalog from **Play-CMS** (`https://cms.play-cms.com`) — internal auth, dynamic menus, layouts, rails, and HLS/trailer playback URLs. See [API.md](API.md) for full endpoint definitions and role ownership.
 
 ## Troubleshooting
 

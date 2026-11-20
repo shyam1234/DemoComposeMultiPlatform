@@ -1,5 +1,6 @@
 package com.ott.platform.database
 
+import com.ott.platform.domain.model.AppMenuItem
 import com.ott.platform.domain.model.Category
 import com.ott.platform.domain.model.Channel
 import com.ott.platform.domain.model.ContentId
@@ -31,10 +32,27 @@ private val webJson = Json {
 }
 
 @Serializable
+private data class StoredMenuBundle(
+    val updatedAtMs: Long,
+    val items: List<StoredMenuItem>,
+)
+
+@Serializable
+private data class StoredLayoutRecord(
+    val id: String,
+    val name: String,
+    val themeUrl: String? = null,
+    val railIds: List<String> = emptyList(),
+    val updatedAtMs: Long = 0L,
+)
+
+@Serializable
 private data class StoredCategory(
     val id: String,
     val name: String,
     val description: String = "",
+    val displayType: String = "Landscape",
+    val contentType: String = "generic",
 )
 
 @Serializable
@@ -58,6 +76,7 @@ private data class StoredChannel(
     val tvgId: String? = null,
     val userAgent: String? = null,
     val referrer: String? = null,
+    val metadataJson: String = "",
 )
 
 @Serializable
@@ -66,8 +85,21 @@ private data class StoredChannelShelf(
     val channels: List<StoredChannel>,
 )
 
-private fun Category.toStored() = StoredCategory(id = id, name = name, description = description)
-private fun StoredCategory.toDomain() = Category(id = id, name = name, description = description)
+private fun Category.toStored() = StoredCategory(
+    id = id,
+    name = name,
+    description = description,
+    displayType = displayType,
+    contentType = contentType,
+)
+
+private fun StoredCategory.toDomain() = Category(
+    id = id,
+    name = name,
+    description = description,
+    displayType = displayType,
+    contentType = contentType,
+)
 
 private fun Channel.toStored() = StoredChannel(
     id = id.value,
@@ -83,50 +115,128 @@ private fun Channel.toStored() = StoredChannel(
     tvgId = tvgId,
     userAgent = userAgent,
     referrer = referrer,
+    metadataJson = encodeMetadataJson(),
 )
 
-private fun StoredChannel.toDomain() = Channel(
-    id = ContentId(id),
-    title = title,
-    logoUrl = logoUrl,
-    streamUrl = streamUrl,
-    categoryId = categoryId,
-    categoryName = categoryName,
-    groupTitle = groupTitle,
-    isGeoBlocked = isGeoBlocked,
-    isNot247 = isNot247,
-    quality = quality,
-    tvgId = tvgId,
-    userAgent = userAgent,
-    referrer = referrer,
-)
+private fun StoredChannel.toDomain(): Channel {
+    val meta = decodeChannelMetadata(metadataJson)
+    return Channel(
+        id = ContentId(id),
+        title = title,
+        logoUrl = logoUrl,
+        streamUrl = streamUrl,
+        categoryId = categoryId,
+        categoryName = categoryName,
+        groupTitle = groupTitle,
+        isGeoBlocked = isGeoBlocked,
+        isNot247 = isNot247,
+        quality = quality,
+        tvgId = tvgId,
+        userAgent = userAgent,
+        referrer = referrer,
+        images = meta.images.map { it.toDomain() },
+        backdropUrl = meta.backdropUrl,
+        synopsis = meta.synopsis,
+        genres = meta.genres,
+        releaseYear = meta.releaseYear,
+        runtimeMinutes = meta.runtimeMinutes,
+        parentalRating = meta.parentalRating,
+        imdbRating = meta.imdbRating,
+        assetType = meta.assetType,
+        cast = meta.cast,
+        director = meta.director,
+        tags = meta.tags,
+        trailerUrl = meta.trailerUrl,
+        language = meta.language,
+    )
+}
 
 @OptIn(ExperimentalTime::class)
 private class WebCatalogLocalDataSource : CatalogLocalDataSource {
     private val mutex = Mutex()
     private val memoryShelves = LinkedHashMap<String, StoredChannelShelf>()
+    private val memoryLayouts = LinkedHashMap<String, StoredLayoutRecord>()
+    private val memoryCategories = LinkedHashMap<String, StoredCategory>()
+    private var categoriesUpdatedAtMs: Long? = null
 
     init {
         loadFromStorage()
     }
 
+    override suspend fun getMenuItems(): List<AppMenuItem> = mutex.withLock {
+        readMenuBundle()?.items?.map { it.toDomain() }.orEmpty()
+    }
+
+    override suspend fun getMenuUpdatedAtMs(): Long? = mutex.withLock {
+        readMenuBundle()?.updatedAtMs
+    }
+
+    override suspend fun replaceMenuItems(items: List<AppMenuItem>) {
+        mutex.withLock {
+            val bundle = StoredMenuBundle(
+                updatedAtMs = Clock.System.now().toEpochMilliseconds(),
+                items = items.map { it.toStored() },
+            )
+            runCatching {
+                window.localStorage.setItem(KEY_MENU, webJson.encodeToString(bundle))
+            }
+        }
+    }
+
+    override suspend fun getLayout(layoutId: String): CachedLayout? = mutex.withLock {
+        memoryLayouts[layoutId]?.let {
+            CachedLayout(
+                id = it.id,
+                name = it.name,
+                themeUrl = it.themeUrl,
+                railIds = it.railIds,
+                updatedAtMs = it.updatedAtMs,
+            )
+        }
+    }
+
+    override suspend fun saveLayout(layout: CachedLayout) {
+        mutex.withLock {
+            val now = Clock.System.now().toEpochMilliseconds()
+            memoryLayouts[layout.id] = StoredLayoutRecord(
+                id = layout.id,
+                name = layout.name,
+                themeUrl = layout.themeUrl,
+                railIds = layout.railIds,
+                updatedAtMs = now,
+            )
+            persistLayouts()
+        }
+    }
+
     override suspend fun getCategories(): List<Category> = mutex.withLock {
-        readCategoriesBundle()?.categories?.map { it.toDomain() }.orEmpty()
+        memoryCategories.values.map { it.toDomain() }
+    }
+
+    override suspend fun getCategory(categoryId: String): Category? = mutex.withLock {
+        memoryCategories[categoryId]?.toDomain()
     }
 
     override suspend fun getCategoriesUpdatedAtMs(): Long? = mutex.withLock {
-        readCategoriesBundle()?.updatedAtMs
+        categoriesUpdatedAtMs
     }
 
     override suspend fun replaceCategories(categories: List<Category>) {
         mutex.withLock {
-            val bundle = StoredCategoriesBundle(
-                updatedAtMs = Clock.System.now().toEpochMilliseconds(),
-                categories = categories.map { it.toStored() },
-            )
-            runCatching {
-                window.localStorage.setItem(KEY_CATEGORIES, webJson.encodeToString(bundle))
+            memoryCategories.clear()
+            categories.forEach { memoryCategories[it.id] = it.toStored() }
+            categoriesUpdatedAtMs = Clock.System.now().toEpochMilliseconds()
+            persistCategories()
+        }
+    }
+
+    override suspend fun upsertCategory(category: Category, sortOrder: Int) {
+        mutex.withLock {
+            memoryCategories[category.id] = category.toStored()
+            if (categoriesUpdatedAtMs == null) {
+                categoriesUpdatedAtMs = Clock.System.now().toEpochMilliseconds()
             }
+            persistCategories()
         }
     }
 
@@ -159,7 +269,8 @@ private class WebCatalogLocalDataSource : CatalogLocalDataSource {
                 .filter {
                     it.title.lowercase().contains(q) ||
                         it.categoryName.lowercase().contains(q) ||
-                        it.groupTitle.lowercase().contains(q)
+                        it.groupTitle.lowercase().contains(q) ||
+                        it.metadataJson.lowercase().contains(q)
                 }
                 .distinctBy { it.id }
                 .take(limit)
@@ -179,18 +290,49 @@ private class WebCatalogLocalDataSource : CatalogLocalDataSource {
         memoryShelves.values.sumOf { it.channels.size }.toLong()
     }
 
-    private fun readCategoriesBundle(): StoredCategoriesBundle? = runCatching {
-        window.localStorage.getItem(KEY_CATEGORIES)?.let {
-            webJson.decodeFromString<StoredCategoriesBundle>(it)
+    private fun readMenuBundle(): StoredMenuBundle? = runCatching {
+        window.localStorage.getItem(KEY_MENU)?.let {
+            webJson.decodeFromString<StoredMenuBundle>(it)
         }
     }.getOrNull()
 
     private fun loadFromStorage() {
         runCatching {
+            window.localStorage.getItem(KEY_CATEGORIES)?.let { raw ->
+                val bundle = webJson.decodeFromString<StoredCategoriesBundle>(raw)
+                categoriesUpdatedAtMs = bundle.updatedAtMs
+                memoryCategories.clear()
+                bundle.categories.forEach { memoryCategories[it.id] = it }
+            }
+        }
+        runCatching {
+            window.localStorage.getItem(KEY_LAYOUTS)?.let { raw ->
+                val decoded = webJson.decodeFromString<Map<String, StoredLayoutRecord>>(raw)
+                memoryLayouts.clear()
+                memoryLayouts.putAll(decoded)
+            }
+        }
+        runCatching {
             val raw = window.localStorage.getItem(KEY_SHELVES) ?: return
             val decoded = webJson.decodeFromString<Map<String, StoredChannelShelf>>(raw)
             memoryShelves.clear()
             memoryShelves.putAll(decoded)
+        }
+    }
+
+    private fun persistCategories() {
+        runCatching {
+            val bundle = StoredCategoriesBundle(
+                updatedAtMs = categoriesUpdatedAtMs ?: Clock.System.now().toEpochMilliseconds(),
+                categories = memoryCategories.values.toList(),
+            )
+            window.localStorage.setItem(KEY_CATEGORIES, webJson.encodeToString(bundle))
+        }
+    }
+
+    private fun persistLayouts() {
+        runCatching {
+            window.localStorage.setItem(KEY_LAYOUTS, webJson.encodeToString(memoryLayouts.toMap()))
         }
     }
 
@@ -201,8 +343,10 @@ private class WebCatalogLocalDataSource : CatalogLocalDataSource {
     }
 
     private companion object {
-        const val KEY_CATEGORIES = "ott_web_categories_v1"
-        const val KEY_SHELVES = "ott_web_shelves_v1"
+        const val KEY_MENU = "ott_web_cms_menu_v2"
+        const val KEY_LAYOUTS = "ott_web_cms_layouts_v2"
+        const val KEY_CATEGORIES = "ott_web_cms_categories_v2"
+        const val KEY_SHELVES = "ott_web_cms_shelves_v2"
     }
 }
 
@@ -260,6 +404,6 @@ private class WebWatchlistLocalDataSource : WatchlistLocalDataSource {
     }
 
     private companion object {
-        const val KEY_WATCHLIST = "ott_web_watchlist_v1"
+        const val KEY_WATCHLIST = "ott_web_watchlist_v2"
     }
 }

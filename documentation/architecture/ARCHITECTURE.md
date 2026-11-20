@@ -248,5 +248,6 @@ Features are enabled by **explicit Koin registration** in the app shell, not by 
 | [FEATURE_EXTRACTION_GUIDE.md](../FEATURE_EXTRACTION_GUIDE.md) | How to remove or extract a feature |
 | [TESTING_GUIDE.md](../TESTING_GUIDE.md) | Unit / UI / platform test strategy |
 | [BUILD_AND_RUN.md](../BUILD_AND_RUN.md) | Build & run commands |
+| [API.md](../API.md) | Play-CMS API definitions, extensibility & job roles |
 | [ARCHITECTURE_DECISIONS.md](../ARCHITECTURE_DECISIONS.md) | ADRs / trade-offs |
 | [FEASIBILITY_CHECK.md](../FEASIBILITY_CHECK.md) | CMP production feasibility & benchmarks |

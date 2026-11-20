@@ -3,6 +3,7 @@ package com.ott.platform.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -26,20 +28,27 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ott.platform.designsystem.OttColors
 import com.ott.platform.designsystem.OttDimens
+import com.ott.platform.domain.model.AppMenuItem
 
 data class OttMenuItem(
     val id: String,
     val label: String,
+    val iconUrl: String? = null,
+    val selectedIconUrl: String? = null,
+    val focusedIconUrl: String? = null,
+    val layoutId: String? = null,
+    val children: List<AppMenuItem> = emptyList(),
 )
 
 /**
- * Top nav: blue highlighter only on focused item.
- * Selected (current page) stays white text — not a permanent blue fill.
+ * Top nav: supports dynamic CMS menu items, optional CMS icons, horizontal scrolling
+ * when more menu items are added, and leanback focus ring.
  */
 @Composable
 fun OttTopMenu(
@@ -68,34 +77,43 @@ fun OttTopMenu(
             fontWeight = FontWeight.Bold,
             modifier = Modifier.testTag("ott_brand"),
         )
-        Spacer(Modifier.width(16.dp))
-        items.forEach { item ->
-            GoogleTvTab(
-                label = item.label,
-                selected = item.id == selectedId,
-                onClick = { onItemSelected(item) },
-                modifier = Modifier.testTag("ott_menu_${item.id}"),
-            )
+        Spacer(Modifier.width(12.dp))
+        Row(
+            modifier = Modifier
+                .weight(1f)
+                .horizontalScroll(rememberScrollState()),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            items.forEach { item ->
+                GoogleTvTab(
+                    item = item,
+                    selected = item.id == selectedId,
+                    onClick = { onItemSelected(item) },
+                    modifier = Modifier.testTag("ott_menu_${item.id}"),
+                )
+            }
         }
-        Spacer(Modifier.weight(1f))
         if (onSearchClick != null) {
             var searchFocused by remember { mutableStateOf(false) }
             val interaction = remember { MutableInteractionSource() }
+            val searchShape = RoundedCornerShape(50)
             Box(
                 modifier = Modifier
-                    .size(40.dp)
                     .onFocusChanged { searchFocused = it.isFocused }
-                    .clip(CircleShape)
-                    .background(if (searchFocused) OttColors.Focus else Color.Transparent)
+                    .clip(searchShape)
+                    .background(if (searchFocused) OttColors.Focus else Color.Transparent, searchShape)
+                    .border(1.dp, if (searchFocused) OttColors.Focus else Color.White.copy(alpha = 0.35f), searchShape)
                     .clickable(
                         interactionSource = interaction,
                         indication = null,
                         onClick = onSearchClick,
                     )
+                    .padding(horizontal = 14.dp, vertical = 8.dp)
                     .testTag("ott_menu_search_icon"),
                 contentAlignment = Alignment.Center,
             ) {
-                Text("⌕", color = Color.White, style = MaterialTheme.typography.titleMedium)
+                Text("Search", color = Color.White, style = MaterialTheme.typography.labelLarge)
             }
         }
     }
@@ -103,7 +121,7 @@ fun OttTopMenu(
 
 @Composable
 private fun GoogleTvTab(
-    label: String,
+    item: OttMenuItem,
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -111,7 +129,12 @@ private fun GoogleTvTab(
     var focused by remember { mutableStateOf(false) }
     val interaction = remember { MutableInteractionSource() }
     val shape = RoundedCornerShape(50)
-    Box(
+    val iconUrl = when {
+        focused && !item.focusedIconUrl.isNullOrBlank() -> item.focusedIconUrl
+        selected && !item.selectedIconUrl.isNullOrBlank() -> item.selectedIconUrl
+        else -> item.iconUrl
+    }
+    Row(
         modifier = modifier
             .onFocusChanged { focused = it.isFocused }
             .clip(shape)
@@ -129,10 +152,19 @@ private fun GoogleTvTab(
                 onClick = onClick,
             )
             .padding(horizontal = 18.dp, vertical = 10.dp),
-        contentAlignment = Alignment.Center,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
+        if (!iconUrl.isNullOrBlank()) {
+            RemoteImage(
+                url = iconUrl,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp).clip(CircleShape),
+                contentScale = ContentScale.Fit,
+            )
+        }
         Text(
-            text = label,
+            text = item.label,
             style = MaterialTheme.typography.titleMedium,
             color = Color.White,
             fontWeight = when {

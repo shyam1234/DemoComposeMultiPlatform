@@ -1,0 +1,219 @@
+package com.ott.platform.data.cms
+
+import com.ott.platform.domain.model.ImageSlot
+import com.ott.platform.domain.model.ImageTypes
+import com.ott.platform.domain.model.RailContentType
+import com.ott.platform.domain.model.ShelfCardStyle
+import com.ott.platform.network.OttJson
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+
+class CmsCatalogMapperTest {
+
+    @Test
+    fun `extractLayoutId handles both http deeplinks and raw layout ids`() {
+        assertEquals(
+            "6af4302c6368a4cce6863ca6",
+            CmsCatalogMapper.extractLayoutId("http://layouts/6af4302c6368a4cce6863ca6"),
+        )
+        assertEquals(
+            "6af4245f6368a4cce6863c73",
+            CmsCatalogMapper.extractLayoutId("6af4245f6368a4cce6863c73"),
+        )
+        assertEquals(
+            "6afe8ede2bbe7c443f8803c4",
+            CmsCatalogMapper.extractLayoutId("https://cms.play-cms.com/layouts/6afe8ede2bbe7c443f8803c4/"),
+        )
+        assertNull(CmsCatalogMapper.extractLayoutId("   "))
+    }
+
+    @Test
+    fun `maps dynamic menu with L1 and L2 children and icons`() {
+        val json = """
+            {
+              "count": 2,
+              "results": [
+                {
+                  "_id": "m1",
+                  "menuGroupId": "tv_menu",
+                  "publish_now": 1,
+                  "menuGroupDeeplinkUrl": "http://layouts/6af4302c6368a4cce6863ca6",
+                  "menuL1": [
+                    {
+                      "menuL1Id": "tv_home",
+                      "menuL1Title": "Home",
+                      "menuL1DeeplinkUrl": "http://layouts/6af4302c6368a4cce6863ca6",
+                      "defaultImageIcon": "/icons/home.png",
+                      "menuL2": [
+                        {
+                          "menuL2Id": "trending",
+                          "menuL2Title": "Trending",
+                          "menuL2DeeplinkUrl": "6af4245f6368a4cce6863c73"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "_id": "m2",
+                  "publish_now": 0,
+                  "menuL1": [
+                    { "menuL1Id": "hidden", "menuL1Title": "Hidden", "menuL1DeeplinkUrl": "x" }
+                  ]
+                }
+              ]
+            }
+        """.trimIndent()
+        val dto = OttJson.instance.decodeFromString<CmsMenuResponseDto>(json)
+        val items = CmsCatalogMapper.mapMenu(dto)
+
+        assertEquals(1, items.size)
+        val home = items.single()
+        assertEquals("Home", home.title)
+        assertEquals("6af4302c6368a4cce6863ca6", home.layoutId)
+        assertEquals("https://cms.play-cms.com/icons/home.png", home.defaultIconUrl)
+        assertEquals(1, home.children.size)
+        assertEquals("6af4245f6368a4cce6863c73", home.children.single().layoutId)
+    }
+
+    @Test
+    fun `maps layout prioritizing sortrail and theme url`() {
+        val json = """
+            {
+              "_id": "6af4302c6368a4cce6863ca6",
+              "name": "Home",
+              "theme": {
+                "theme_id": "t1",
+                "theme_url": "https://cms.play-cms.com/v1/imageresize/theme.png"
+              },
+              "rail_id": ["r1", "r2"],
+              "sortrail": ["r2", "r1", "r2"]
+            }
+        """.trimIndent()
+        val dto = OttJson.instance.decodeFromString<CmsLayoutResponseDto>(json)
+        val layout = CmsCatalogMapper.mapLayout(dto, fallbackLayoutId = "fallback")
+
+        assertEquals("6af4302c6368a4cce6863ca6", layout.id)
+        assertEquals("Home", layout.name)
+        assertEquals("https://cms.play-cms.com/v1/imageresize/theme.png", layout.themeUrl)
+        assertEquals(listOf("r2", "r1"), layout.railIds)
+    }
+
+    @Test
+    fun `maps movie and tv show rail payloads with polymorphic fields and future imagetypes`() {
+        val railJson = """
+            {
+              "count": 1,
+              "results": [
+                {
+                  "_id": "66ea7796ebdca80012ede850",
+                  "name": "Top 10 Today",
+                  "rail_content_type": "top_10",
+                  "rail_display_type": "Portrait",
+                  "publish_now": 1,
+                  "existing_asset": {
+                    "count": 2,
+                    "existing_asset": [
+                      {
+                        "asset_id": "movie_1",
+                        "title": "The RIP",
+                        "long_description": "Crime thriller feature.",
+                        "runtime": 7200,
+                        "release_date": "2026-01-16T00:00:00.000Z",
+                        "parental_rating": "16+",
+                        "imdb_rating": null,
+                        "asset_type": "movies",
+                        "is_hd": 1,
+                        "Dolby": 1,
+                        "genres": [
+                          { "genre_id": "g1", "genre_name": "Crime" },
+                          { "genre_id": "g2", "genre_name": "Thriller" }
+                        ],
+                        "playback_urls": {
+                          "hls_url": "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
+                        },
+                        "images": [
+                          {
+                            "imagetype": "Portrait",
+                            "imgurl": "https://cms.play-cms.com/portrait.png",
+                            "imagewidth": 729,
+                            "imageheight": 1080
+                          },
+                          {
+                            "imagetype": "Landscape",
+                            "imgurl": "https://cms.play-cms.com/landscape.png",
+                            "imagewidth": 1920,
+                            "imageheight": 1080
+                          },
+                          {
+                            "imagetype": "Square",
+                            "imgurl": "https://cms.play-cms.com/square.png",
+                            "imagewidth": 800,
+                            "imageheight": 800
+                          }
+                        ]
+                      },
+                      {
+                        "asset_id": "show_1",
+                        "show_id": "1795077199780",
+                        "name": {},
+                        "title": "Beyond Earth Colony",
+                        "short_description": "Distant planet colony.",
+                        "runtime": 0,
+                        "imdb_rating": 8,
+                        "assetType": "shows",
+                        "is_hd": "0",
+                        "genres": [
+                          { "genre_id": "g3", "genre_name": "Sci-Fi" }
+                        ],
+                        "tags": ["ISG# 2025"],
+                        "images": [
+                          {
+                            "imagetype": "Landscape",
+                            "imageurl": "/mount/images/colony.jpeg",
+                            "imagewidth": 1920,
+                            "imageheight": 1080
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+        """.trimIndent()
+
+        val wrapper = OttJson.instance.decodeFromString<CmsRailsResponseDto>(railJson)
+        val rail = CmsCatalogMapper.mapRail(wrapper.results.single(), fallbackRailId = "fallback")
+
+        assertEquals("Top 10 Today", rail.title)
+        assertEquals(ShelfCardStyle.Portrait, rail.cardStyle)
+        assertEquals(RailContentType.Top10, rail.contentType)
+        assertEquals(2, rail.items.size)
+
+        val movie = rail.items[0]
+        assertEquals("movie_1", movie.id.value)
+        assertEquals("The RIP", movie.title)
+        assertEquals("https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8", movie.streamUrl)
+        assertTrue(movie.isPlayable)
+        assertEquals("2026", movie.releaseYear)
+        assertEquals(120, movie.runtimeMinutes)
+        assertEquals("16+", movie.parentalRating)
+        assertEquals("HD · Dolby", movie.quality)
+        assertEquals(listOf("Crime", "Thriller"), movie.genres)
+        assertEquals("https://cms.play-cms.com/portrait.png", movie.imageFor(ImageSlot.PortraitCard))
+        assertEquals("https://cms.play-cms.com/landscape.png", movie.imageFor(ImageSlot.Hero))
+        assertEquals("https://cms.play-cms.com/square.png", movie.imageForRail("Square"))
+
+        val show = rail.items[1]
+        assertEquals("show_1", show.id.value)
+        assertEquals(8.0, show.imdbRating)
+        assertEquals("shows", show.assetType)
+        assertNotNull(show.logoUrl)
+        assertTrue(show.logoUrl!!.startsWith("https://cms.play-cms.com/mount/images/colony.jpeg"))
+        assertEquals(ImageTypes.LANDSCAPE, show.images.single().type)
+    }
+}

@@ -18,6 +18,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.ott.platform.designsystem.OttDimens
 import com.ott.platform.domain.model.Channel
+import com.ott.platform.domain.model.ShelfCardStyle
 import com.ott.platform.ui.components.ChannelCard
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -43,19 +44,24 @@ fun WatchlistScreen(
         Text("Watchlist", style = MaterialTheme.typography.headlineMedium)
         if (items.isEmpty()) {
             Text(
-                "Save channels from Details to watch later.",
+                "Save movies & shows from Details to watch later.",
                 modifier = Modifier.padding(top = 16.dp).testTag("watchlist_empty"),
             )
         } else {
             LazyVerticalGrid(
-                columns = GridCells.Adaptive(140.dp),
+                columns = GridCells.Adaptive(if (isTv) 220.dp else 156.dp),
                 contentPadding = PaddingValues(vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.testTag("watchlist_grid"),
             ) {
                 items(items, key = { it.id.value }) { channel ->
-                    ChannelCard(channel = channel, onClick = { onOpenDetails(channel) })
+                    ChannelCard(
+                        channel = channel,
+                        onClick = { onOpenDetails(channel) },
+                        style = ShelfCardStyle.Landscape,
+                        isTv = isTv,
+                    )
                 }
             }
         }

@@ -33,22 +33,30 @@ object OttDimens {
     val ShelfSpacing = 28.dp
     val PhoneShelfSpacing = 18.dp
     // Landscape (16:9)
-    val CardWidth = 148.dp
-    val CardHeight = 84.dp
-    val TvCardWidth = 248.dp
-    val TvCardHeight = 140.dp
+    val CardWidth = 160.dp
+    val CardHeight = 90.dp
+    val TvCardWidth = 256.dp
+    val TvCardHeight = 144.dp
     // Portrait / vertical poster (2:3)
-    val PortraitCardWidth = 112.dp
-    val PortraitCardHeight = 168.dp
+    val PortraitCardWidth = 116.dp
+    val PortraitCardHeight = 174.dp
     val TvPortraitCardWidth = 168.dp
     val TvPortraitCardHeight = 252.dp
+    // Square (1:1) for future Square rails
+    val SquareCardSize = 136.dp
+    val TvSquareCardSize = 196.dp
+    // Wide Banner / Editorial (21:9)
+    val BannerCardWidth = 240.dp
+    val BannerCardHeight = 108.dp
+    val TvBannerCardWidth = 360.dp
+    val TvBannerCardHeight = 162.dp
     val CardCorner = 12.dp
-    val CardTitleHeight = 36.dp
-    val HeroHeight = 200.dp
-    val TvHeroHeight = 380.dp
+    val CardTitleHeight = 38.dp
+    val HeroHeight = 230.dp
+    val TvHeroHeight = 400.dp
     val FocusBorder = 4.dp
     val RowGap = 20.dp
-    val PhoneRowGap = 10.dp
+    val PhoneRowGap = 12.dp
 }
 
 private val OttDarkColors = darkColorScheme(

@@ -8,6 +8,12 @@ import com.ott.platform.feature.search.impl.searchModule
 import com.ott.platform.feature.watchlist.impl.watchlistModule
 import org.koin.core.context.startKoin
 import org.koin.core.module.Module
+import org.koin.core.module.dsl.viewModelOf
+import org.koin.dsl.module
+
+private val sharedAppModule = module {
+    viewModelOf(::AppMenuViewModel)
+}
 
 fun initKoin(extraModules: List<Module> = emptyList()) {
     startKoin {
@@ -17,6 +23,7 @@ fun initKoin(extraModules: List<Module> = emptyList()) {
 }
 
 fun featureModules(): List<Module> = listOf(
+    sharedAppModule,
     homeModule,
     searchModule,
     detailsModule,

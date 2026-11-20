@@ -136,12 +136,29 @@
 
 **Context:** Users need persistent watchlist state and offline browsing of the previously fetched catalog when network connectivity is unavailable across Android, iOS, and Desktop.  
 
-**Decision:** Introduce `:core:database` using **SQLDelight 2.4.1** (`ott_platform.db`) with shared schema/queries/data sources in `commonMain` and platform SQLite drivers (`AndroidSqliteDriver`, `NativeSqliteDriver`, `JdbcSqliteDriver`). Bind `PersistentWatchlistRepository` and wire `CatalogLocalDataSource` into `IptvCatalogRepository` (6-hour freshness TTL + offline fallback on network failure). Use `kotlin.time.Clock.System` in common code for Kotlin/Native compatibility.  
+**Decision:** Introduce `:core:database` using **SQLDelight 2.4.1** (`ott_platform.db`) with shared schema/queries/data sources in `commonMain` and platform SQLite drivers (`AndroidSqliteDriver`, `NativeSqliteDriver`, `JdbcSqliteDriver`). Bind `PersistentWatchlistRepository` and wire `CatalogLocalDataSource` into the catalog repository (6-hour freshness TTL + offline fallback on network failure). Use `kotlin.time.Clock.System` in common code for Kotlin/Native compatibility.  
 
 **Consequences:**
 - Single shared SQLite schema and reactive `Flow` watchlist across Android, Android TV, iOS, and Desktop.
 - Requires `-lsqlite3` linker flag for the static `OttShared` iOS framework.
-- Schema migration tests and encryption (if needed later) remain tracked in [FEASIBILITY_CHECK.md](FEASIBILITY_CHECK.md).
+- Schema migrations (`1.sqm`, `2.sqm`) upgrade existing installations cleanly without leaving stale rows.
+
+---
+
+## ADR-011: Play-CMS dynamic menu, layout, rail, and extensible ImageSlot architecture
+
+**Status:** Accepted  
+
+**Context:** Replaced static `iptv-org` M3U/category feeds with **Play-CMS** (`https://cms.play-cms.com`), where navigation tabs (`menuL1`/`menuL2`), screen layouts (`theme_url`, `sortrail`), rail presentation (`rail_display_type`, `rail_content_type`), and artwork `imagetype` values are server-driven and may introduce new types in the future.
+
+**Decision:**
+- Implement `CmsAuthManager` (internal login + `Mutex` single-flight caching) and `CmsCatalogRemoteDataSource` (automatic `401` token refresh + retry once) in `:core:data`, backed by SQLDelight v3 (`cms_menu`, `cms_layout`, `categories`, composite-key `channels(category_id, id)`) and Web `localStorage` (`_v2`).
+- Store all asset `MediaImage` entries in `Channel.images` and resolve artwork dynamically through `ImageSlot.forRail(displayType, contentType)` + `ShelfCardStyle.fromCms()`, matching future CMS `imagetype` values case-insensitively with orientation-based fallbacks.
+- Drive top/bottom navigation dynamically from `AppMenuViewModel` (`OttRoutes.HOME` + `OttRoutes.LAYOUT`) and render `menuL2` sub-menus inline on `HomeScreen`.
+
+**Consequences:**
+- New CMS menu tabs, layouts, rail styles (`Portrait`, `Landscape`, `Square`, `Banner`, `Top10`, `Grid`, `Mosaic`, `Editorial`), and future `imagetype` artwork work without rewriting repository or parser code.
+- See [API.md](API.md) for full API contracts and team ownership roles.
 
 ---
 

@@ -19,9 +19,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -33,11 +38,12 @@ import androidx.compose.ui.unit.dp
 import com.ott.platform.designsystem.OttColors
 import com.ott.platform.designsystem.OttDimens
 import com.ott.platform.domain.model.Channel
+import com.ott.platform.domain.model.ImageSlot
 import kotlinx.coroutines.delay
 
 /**
  * Multi-item billboard with auto-advance + page dots.
- * TV keeps left-copy / right-art leanback layout; phone uses full-width stacked copy.
+ * Renders full-bleed CMS Hero/Landscape artwork with metadata & synopsis.
  */
 @Composable
 fun HeroBannerCarousel(
@@ -51,9 +57,10 @@ fun HeroBannerCarousel(
 ) {
     if (channels.isEmpty()) return
     val pagerState = rememberPagerState(pageCount = { channels.size })
+    var heroHasFocus by remember { mutableStateOf(false) }
 
-    LaunchedEffect(channels.size, pagerState.settledPage) {
-        if (channels.size <= 1) return@LaunchedEffect
+    LaunchedEffect(channels.size, pagerState.settledPage, heroHasFocus) {
+        if (channels.size <= 1 || heroHasFocus) return@LaunchedEffect
         delay(autoAdvanceMs)
         val next = (pagerState.settledPage + 1) % channels.size
         pagerState.animateScrollToPage(next)
@@ -63,6 +70,7 @@ fun HeroBannerCarousel(
         modifier = modifier
             .fillMaxWidth()
             .height(height)
+            .onFocusChanged { heroHasFocus = it.hasFocus }
             .testTag("hero_banner"),
     ) {
         HorizontalPager(
@@ -131,23 +139,30 @@ private fun HeroBannerPage(
     isTv: Boolean,
 ) {
     val horizontal = if (isTv) OttDimens.ScreenPadding else OttDimens.PhoneScreenPadding
+    val heroArtUrl = remember(channel.id, channel.images, channel.backdropUrl, channel.logoUrl) {
+        channel.imageFor(ImageSlot.Hero)
+    }
+    val metaLine = remember(channel) {
+        listOfNotNull(
+            channel.releaseYear,
+            channel.runtimeMinutes?.let { if (it >= 60) "${it / 60}h ${it % 60}m" else "${it}m" },
+            channel.parentalRating,
+            channel.imdbRating?.let { "IMDb $it" },
+            channel.genres.take(2).takeIf { it.isNotEmpty() }?.joinToString(" · "),
+        ).ifEmpty { listOf(channel.categoryName) }
+            .joinToString("  ·  ")
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(OttColors.Surface),
     ) {
         RemoteImage(
-            url = channel.logoUrl,
+            url = heroArtUrl,
             contentDescription = channel.title,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(
-                    start = if (isTv) 280.dp else 16.dp,
-                    end = if (isTv) 24.dp else 16.dp,
-                    top = if (isTv) 24.dp else 12.dp,
-                    bottom = if (isTv) 24.dp else 72.dp,
-                ),
-            contentScale = ContentScale.Fit,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop,
         )
         if (isTv) {
             Box(
@@ -156,9 +171,9 @@ private fun HeroBannerPage(
                     .background(
                         Brush.horizontalGradient(
                             colorStops = arrayOf(
-                                0.0f to Color.Black.copy(alpha = 0.92f),
-                                0.42f to Color.Black.copy(alpha = 0.55f),
-                                0.75f to Color.Transparent,
+                                0.0f to Color.Black.copy(alpha = 0.94f),
+                                0.44f to Color.Black.copy(alpha = 0.65f),
+                                0.80f to Color.Transparent,
                             ),
                         ),
                     ),
@@ -172,15 +187,15 @@ private fun HeroBannerPage(
                         colorStops = if (isTv) {
                             arrayOf(
                                 0.0f to Color.Transparent,
-                                0.55f to Color.Transparent,
+                                0.50f to Color.Transparent,
                                 1.0f to Color.Black,
                             )
                         } else {
                             arrayOf(
-                                0.0f to Color.Black.copy(alpha = 0.35f),
+                                0.0f to Color.Black.copy(alpha = 0.25f),
                                 0.35f to Color.Transparent,
-                                0.55f to Color.Black.copy(alpha = 0.45f),
-                                1.0f to Color.Black.copy(alpha = 0.92f),
+                                0.55f to Color.Black.copy(alpha = 0.58f),
+                                1.0f to Color.Black.copy(alpha = 0.94f),
                             )
                         },
                     ),
@@ -189,18 +204,18 @@ private fun HeroBannerPage(
         Column(
             modifier = Modifier
                 .align(Alignment.BottomStart)
-                .fillMaxWidth(if (isTv) 0.55f else 1f)
+                .fillMaxWidth(if (isTv) 0.56f else 1f)
                 .padding(
                     start = horizontal,
                     end = horizontal,
-                    bottom = if (isTv) 36.dp else 34.dp,
+                    bottom = if (isTv) 36.dp else 32.dp,
                 ),
         ) {
             Text(
-                text = channel.categoryName.uppercase(),
+                text = metaLine.uppercase(),
                 style = if (isTv) MaterialTheme.typography.labelLarge else MaterialTheme.typography.labelMedium,
                 color = OttColors.AccentSoft,
-                fontWeight = FontWeight.Medium,
+                fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -213,19 +228,21 @@ private fun HeroBannerPage(
                 maxLines = if (isTv) 2 else 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            if (isTv) {
-                Spacer(Modifier.height(10.dp))
+            if (channel.synopsis.isNotBlank()) {
+                Spacer(Modifier.height(if (isTv) 10.dp else 4.dp))
                 Text(
-                    text = "Live from iptv-org · free public stream",
-                    style = MaterialTheme.typography.bodyLarge,
+                    text = channel.synopsis,
+                    style = if (isTv) MaterialTheme.typography.bodyLarge else MaterialTheme.typography.bodySmall,
                     color = OttColors.OnSurfaceMuted,
+                    maxLines = if (isTv) 2 else 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
             Spacer(Modifier.height(if (isTv) 22.dp else 12.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 FocusablePillButton(
-                    label = "Watch",
-                    onClick = onPlay,
+                    label = if (channel.isPlayable) "Watch Now" else "Explore",
+                    onClick = if (channel.isPlayable) onPlay else onDetails,
                     style = PillStyle.Primary,
                     compact = !isTv,
                     modifier = Modifier.testTag("hero_play"),

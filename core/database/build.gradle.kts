@@ -22,6 +22,7 @@ kotlin {
             implementation(projects.core.domain)
             implementation(projects.core.logging)
             implementation(libs.kotlinx.coroutines.core)
+            implementation(libs.kotlinx.serialization.json)
             implementation(libs.koin.core)
             implementation(libs.sqldelight.runtime)
             implementation(libs.sqldelight.coroutines)

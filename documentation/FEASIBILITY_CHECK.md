@@ -11,8 +11,8 @@
 | Pillar | Result | Confidence | Summary Finding |
 |--------|--------|------------|-----------------|
 | **UI Support (CMP)** | **FEASIBLE (Conditional)** | **High** (Mobile/Web) / **Medium** (TV/Desktop) | Single shared Compose UI (`apps/shared` + `features/*/impl`) runs on **Android Phone/Tablet, Android TV, Desktop JVM, Web (`wasmJs`), and iPhone (`arm64`)**. **tvOS is NOT officially supported by CMP** and requires SwiftUI; Intel iOS simulators (`iosX64`) are dropped in CMP 1.11+. |
-| **Network Support (Ktor)** | **FEASIBLE (Verified)** | **High** | `Ktor 3.1.3` (`OkHttp` Android, `Darwin` iOS, `CIO` Desktop, `Js` Web) + `kotlinx.serialization` successfully fetches live JSON + M3U playlists on real Android, iOS, and Web (`access-control-allow-origin: *` on `iptv-org.github.io`). Enterprise features (token refresh, TLS pinning, reachability) are not yet built in this POC. |
-| **Database Support (SQLDelight + Web `localStorage`)** | **FEASIBLE (Verified)** | **High** | `:core:database` (`SQLDelight 2.4.1`) runs a single shared SQLite schema across Android (`AndroidSqliteDriver`), iOS (`NativeSqliteDriver`), and Desktop (`JdbcSqliteDriver`), plus `localStorage` persistence on Web (`wasmJs`). Verified **29 categories & 320 channels** cached on Android Phone, Samsung Tab, iPhone 13, and Web browser. |
+| **Network Support (Ktor)** | **FEASIBLE (Verified)** | **High** | `Ktor 3.1.3` (`OkHttp` Android, `Darwin` iOS, `CIO` Desktop, `Js` Web) + `kotlinx.serialization` integrates live **Play-CMS** APIs (`POST /v1/login`, `GET /v1/menu`, `GET /v1/layouts/{id}`, `GET /v2/rails?id={id}`) with `Mutex` single-flight login and automatic `401` token refresh on Android, iOS, and Web (`access-control-allow-origin: *`). |
+| **Database Support (SQLDelight + Web `localStorage`)** | **FEASIBLE (Verified)** | **High** | `:core:database` (`SQLDelight 2.4.1`, schema v3 with `1.sqm`/`2.sqm` migrations) runs a single shared SQLite schema across Android (`AndroidSqliteDriver`), iOS (`NativeSqliteDriver`), and Desktop (`JdbcSqliteDriver`), plus `localStorage` persistence on Web (`wasmJs`). Verified **7 CMS rails & 33 assets** cached on iPhone 13, Android Tablet, and Web browser. |
 | **Media Playback & Interop** | **FEASIBLE (Via Native Boundary)** | **High** | `PlayerEngine` abstraction + Compose `AndroidView` (`Media3`) and `UIKitView` (`AVPlayerLayer`) work on physical devices. Desktop uses `FakePlayerEngine`. DRM (Widevine/FairPlay) and PiP are not implemented in this POC. |
 | **Overall CMP Verdict** | **GO — With Documented Native Boundaries** | **High** | **Shared business logic, networking, and offline SQLite database are 100% shareable across all targets. Shared CMP UI is production-viable for Android Mobile/Tablet, iPhone/iPad, Android TV, and Desktop; keep Apple TV (`tvOS`) UI in native SwiftUI.** |
 
@@ -46,14 +46,14 @@
 
 | Aspect | Android (`OkHttp`) | iOS (`Darwin`) | Desktop (`CIO`) | Result |
 |--------|-------------------|----------------|-----------------|--------|
-| **HTTP Client & TLS** | `ktor-client-okhttp:3.1.3` | `ktor-client-darwin:3.1.3` | `ktor-client-cio:3.1.3` | **PASS** — Live HTTPS requests to `iptv-org.github.io` (`categories.json` + 8 `.m3u` playlists) succeeded with `200 OK` on both Samsung `SM-A076B` and `iPhone 13`. |
-| **JSON & Playlist Parsing** | `kotlinx.serialization` + `M3uPlaylistParser` | Same shared `commonMain` | Same shared `commonMain` | **PASS** — Verified in `M3uPlaylistParserTest` (3 tests) and live device runs (`29` categories, `320` channels parsed). |
-| **Mock / Unit Testability** | `ktor-client-mock:3.1.3` | Shared `commonTest` | Shared `commonTest` | **PASS** — `IptvCatalogRepositoryOfflineTest` verifies full HTTP + serialization + offline fallback pipeline on JVM without network. |
+| **HTTP Client & TLS** | `ktor-client-okhttp:3.1.3` | `ktor-client-darwin:3.1.3` | `ktor-client-cio:3.1.3` | **PASS** — Live HTTPS requests to `cms.play-cms.com` (`/v1/login`, `/v1/menu`, `/v1/layouts/{id}`, `/v2/rails?id={id}`) succeeded with `200 OK` and automatic `401` retry on Android, iOS, and Web. |
+| **JSON & Polymorphic Parsing** | `kotlinx.serialization` + `CmsCatalogMapper` | Same shared `commonMain` | Same shared `commonMain` | **PASS** — Handles polymorphic CMS fields (`name: {} | ""`, `is_hd: 0 | "0"`) and future `imagetype` values; verified in `CmsCatalogMapperTest` (4 tests) and live device runs. |
+| **Mock / Unit Testability** | `ktor-client-mock:3.1.3` | Shared `commonTest` | Shared `commonTest` | **PASS** — `CmsCatalogRepositoryTest` verifies login, `401` token refresh, layout switching, and offline fallback on JVM without network. |
 | **Image Networking (Coil 3)** | `coil-network-okhttp:3.2.0` | `coil-network-ktor3:3.2.0` | Not wired | **PASS (Mobile)** — Verified `tmp/coil3_disk_cache` populated with cached channel logos on `iPhone 13`. |
 
 ### 2.2 Production Network Gaps Identified (Not Implemented in POC)
 
-- **Not yet validated in code**: OAuth/JWT `401` single-flight token refresh, TLS certificate pinning (`CertificatePinner` / `NSURLSession` delegate), cross-platform network reachability observer (`ConnectivityManager` / `NWPathMonitor`), and background asset downloads (`WorkManager` / `URLSessionConfiguration.background`).
+- **Not yet validated in code**: TLS certificate pinning (`CertificatePinner` / `NSURLSession` delegate), cross-platform network reachability observer (`ConnectivityManager` / `NWPathMonitor`), and background asset downloads (`WorkManager` / `URLSessionConfiguration.background`). *(Note: JWT token acquisition and single-flight `401` refresh are implemented in `CmsAuthManager` + `CmsCatalogRemoteDataSource`.)*
 
 ---
 
@@ -61,14 +61,14 @@
 
 ### 3.1 Verified SQLDelight Results (`:core:database`)
 
-**Technology Selected:** `SQLDelight 2.4.1` (`ott_platform.db`) with `AndroidSqliteDriver` (WAL enabled), `NativeSqliteDriver` (`-lsqlite3`), and `JdbcSqliteDriver` (WAL enabled).
+**Technology Selected:** `SQLDelight 2.4.1` (`ott_platform.db`, schema v3 with `1.sqm` and `2.sqm`) with `AndroidSqliteDriver` (WAL enabled), `NativeSqliteDriver` (`-lsqlite3`), and `JdbcSqliteDriver` (WAL enabled).
 
 | Check | Result | Measured Evidence |
 |-------|--------|-------------------|
-| **Shared Schema & Reactive Queries** | **PASS** | Single `OttDatabase.sq` (`categories`, `channels`, `watchlist` tables + 3 indexes) compiles for Android, `iosArm64`, `iosSimulatorArm64`, and Desktop JVM. `WatchlistLocalDataSource` exposes reactive `Flow<List<Channel>>`. |
-| **Real Device Persistence — iPhone 13** | **PASS** | Verified directly in device container `Library/Application Support/databases/ott_platform.db`: **29 categories** and **320 channels** (`40` per shelf across 8 shelves) persisted on disk. |
-| **Real Device Persistence — Android (`SM-A076B`)** | **PASS** | Verified directly via `run-as com.ott.platform.android` (`databases/ott_platform.db`, `156 KB`): **29 categories** and **320 channels** persisted on disk. |
-| **Offline Fallback Behavior** | **PASS** | `IptvCatalogRepository` enforces a 6-hour TTL cache and automatically serves SQLite categories, Home shelves, Search (`COLLATE NOCASE` `LIKE`), and Channel details when remote calls fail. Verified via `IptvCatalogRepositoryOfflineTest` and `SqlDelightDataSourcesTest`. |
+| **Shared Schema & Reactive Queries** | **PASS** | Single `OttDatabase.sq` (`cms_menu`, `cms_layout`, `categories`, `channels` with composite PK `(category_id, id)`, `watchlist` tables + indexes) compiles for Android, `iosArm64`, `iosSimulatorArm64`, and Desktop JVM. `WatchlistLocalDataSource` exposes reactive `Flow<List<Channel>>`. |
+| **Real Device Persistence — iPhone 13** | **PASS** | Verified directly in device container `Library/Application Support/databases/ott_platform.db`: **1 dynamic menu**, **1 layout**, **7 CMS rails**, and **33 assets** persisted on disk. |
+| **Real Device Persistence — Android (`SM-P613`)** | **PASS** | Verified directly via `run-as com.ott.platform.android` (`databases/ott_platform.db`, schema v3): **1 dynamic menu**, **1 layout**, **7 CMS rails**, and **33 assets** persisted on disk. |
+| **Offline Fallback Behavior** | **PASS** | `CmsCatalogRepository` enforces a 6-hour TTL cache and automatically serves SQLite menu, layout, rail shelves, Search (`GROUP BY id`, `COLLATE NOCASE` `LIKE`), and Channel details when remote calls fail. Verified via `CmsCatalogRepositoryTest` and `SqlDelightDataSourcesTest`. |
 | **iOS Static Framework Linking** | **PASS (With Config)** | Requires `linkerOpts("-lsqlite3")` in `apps/shared/build.gradle.kts` and `"-lsqlite3"` in `apps/iosApp/iosApp.xcodeproj/project.pbxproj` (`OTHER_LDFLAGS`); missing this flag fails Xcode linking with undefined `_sqlite3_*` symbols. |
 | **Kotlin/Native Timestamp Compatibility** | **PASS (Verified Fix)** | Using `kotlinx.datetime.Clock.System` caused a runtime `IrLinkageError` on `iosArm64` (`No class found for symbol 'kotlinx.datetime/Clock.System|null[0]'`), silently preventing DB writes on iOS. Switching to stdlib `kotlin.time.Clock.System` resolved this completely. |
 
@@ -108,18 +108,22 @@ Measured on **Samsung `SM-A076B`** (`adb shell am start -W` + `dumpsys meminfo`)
 
 ### 4.3 Automated Test Execution Results (`./gradlew testDebugUnitTest desktopTest`)
 
-Executed on **2026-11-16** — **26 / 26 tests passed (0 failures, 0 errors, 0 skipped)**:
+Executed on **2026-11-20** — **46 / 46 tests passed (0 failures, 0 errors, 0 skipped)** across **23 test suites**:
 
 | Module | Test Suite | Target(s) | Tests | Result |
 |--------|------------|-----------|-------|--------|
 | `:core:database` | `SqlDelightDataSourcesTest` | `desktopTest` | 2 | **PASS** |
-| `:core:data` | `IptvCatalogRepositoryOfflineTest` | `desktopTest`, `testDebugUnitTest` | 1 × 2 | **PASS** |
-| `:core:data` | `M3uPlaylistParserTest` | `desktopTest`, `testDebugUnitTest` | 3 × 2 | **PASS** |
+| `:core:data` | `CmsCatalogMapperTest` | `desktopTest`, `testDebugUnitTest` | 4 × 2 | **PASS** |
+| `:core:data` | `CmsCatalogRepositoryTest` | `desktopTest`, `testDebugUnitTest` | 1 × 2 | **PASS** |
 | `:core:data` | `InMemoryWatchlistRepositoryTest` | `desktopTest`, `testDebugUnitTest` | 1 × 2 | **PASS** |
+| `:core:domain` | `ImageResolverTest` | `desktopTest`, `testDebugUnitTest` | 4 × 2 | **PASS** |
+| `:core:domain` | `GetMenuAndLayoutFeedUseCaseTest` | `desktopTest`, `testDebugUnitTest` | 2 × 2 | **PASS** |
 | `:core:domain` | `GetHomeFeedUseCaseTest` | `desktopTest`, `testDebugUnitTest` | 2 × 2 | **PASS** |
 | `:core:domain` | `SearchChannelsUseCaseTest` | `desktopTest`, `testDebugUnitTest` | 2 × 2 | **PASS** |
 | `:core:domain` | `PlayerControllerTest` | `desktopTest`, `testDebugUnitTest` | 2 × 2 | **PASS** |
 | `:features:home-impl` | `HomeViewModelTest` | `desktopTest`, `testDebugUnitTest` | 1 × 2 | **PASS** |
+| `:features:player-impl` | `PlayerViewModelTest` | `desktopTest`, `testDebugUnitTest` | 2 × 2 | **PASS** |
+| `:apps:shared` | `AppMenuViewModelTest` | `desktopTest`, `testDebugUnitTest` | 1 × 2 | **PASS** |
 
 *UI instrumentation tests (`connectedDebugAndroidTest`, `XCUITest`) and `iosSimulatorArm64Test` were not executed.*
 

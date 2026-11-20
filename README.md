@@ -24,6 +24,7 @@ Shared business logic and shared UI power Android (phone, tablet, TV), iOS, macO
 | [FEATURE_EXTRACTION_GUIDE.md](documentation/FEATURE_EXTRACTION_GUIDE.md) | Enable / disable / extract features safely |
 | [TESTING_GUIDE.md](documentation/TESTING_GUIDE.md) | Unit, UI, and platform test strategy |
 | [BUILD_AND_RUN.md](documentation/BUILD_AND_RUN.md) | JDK, Gradle, run commands |
+| [API.md](documentation/API.md) | Play-CMS API definitions, extensibility & engineering job roles |
 | [ARCHITECTURE_DECISIONS.md](documentation/ARCHITECTURE_DECISIONS.md) | ADRs and trade-offs |
 | [FEASIBILITY_CHECK.md](documentation/FEASIBILITY_CHECK.md) | CMP UI, network, database & production readiness benchmarks |
 
@@ -80,16 +81,18 @@ flowchart TB
 - Coroutines · Serialization · Ktor · Koin
 - **SQLDelight 2.4.1** (`:core:database` — Android, iOS, Desktop SQLite drivers) + `localStorage` persistence on Web (`wasmJs`) for offline catalog caching & persistent watchlist
 - Media3 ExoPlayer (Android) · AVPlayer (iOS) · HTML5 `<video>` + `hls.js` (`platform/web`) · FakePlayerEngine (desktop/tests)
-- **iptv-org** free category M3U + categories JSON
+- **Play-CMS** (`https://cms.play-cms.com`) dynamic auth, menus, layouts, rails, and rich artwork
 
-## Demo data: free IPTV API
+## Demo data: Play-CMS API
 
-Live catalog from **iptv-org** (no key):
+Live dynamic OTT catalog from **Play-CMS** (internal login handshake via `CmsAuthManager` with automatic `401` token refresh):
 
-- Categories: `https://iptv-org.github.io/api/categories.json`
-- Shelves: `https://iptv-org.github.io/iptv/categories/{news|movies|sports|…}.m3u`
+- Login: `POST https://cms.play-cms.com/v1/login?devicetype=atv_ott`
+- Menu: `GET https://cms.play-cms.com/v1/menu?devicetype=androidTV&lang_code=en`
+- Layout: `GET https://cms.play-cms.com/v1/layouts/{layoutId}`
+- Rails: `GET https://cms.play-cms.com/v2/rails?id={railId}`
 
-See [IPTV_DATA_SOURCE.md](documentation/IPTV_DATA_SOURCE.md).
+See [API.md](documentation/API.md) for full API schemas, `ImageSlot` / dynamic menu extensibility, and engineering job roles.
 
 ## Run
 
@@ -108,14 +111,14 @@ export JAVA_HOME=/usr/local/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home
 ## Unit tests (executed)
 
 ```bash
-./gradlew :core:database:desktopTest :core:data:desktopTest :core:domain:desktopTest :core:player-api:desktopTest
+./gradlew testDebugUnitTest desktopTest --console=plain
 ```
 
-**Passed on this machine:** Search/Home use cases, M3U parser, SQLDelight catalog & watchlist persistence, offline fallback repository, and PlayerController.
+**Passed on this machine:** 23 suites / **46 tests passed** (0 failures, 0 errors, 0 skipped) — covering `CmsCatalogMapper`, `CmsCatalogRepository` (login, `401` refresh, layout switching, offline fallback), `ImageResolver`, `GetMenuUseCase`, `GetLayoutFeedUseCase`, `SearchChannelsUseCase`, SQLDelight catalog/menu/layout/watchlist persistence, `AppMenuViewModel`, `HomeViewModel`, `PlayerViewModel`, and `PlayerController`.
 
 ## Status
 
-Android phone/tablet/TV + Desktop + **Web (`wasmJs`)** + **iOS device** (CMP + AVPlayer + SQLDelight offline cache) are verified. Shared UI (splash, responsive top/bottom nav, hero/shelves, search, details, watchlist, player) runs on Android, iPhone, and Web (`apps/webApp` via `OttShared` / `apps/shared`), with 29 categories and 320 channels cached offline (`ott_platform.db` on native, `localStorage` on Web). Apple TV remains SwiftUI + shared KMP (not CMP UI).
+Android phone/tablet/TV + Desktop + **Web (`wasmJs`)** + **iOS device** (CMP + AVPlayer + SQLDelight v3 offline cache) are verified against the live Play-CMS backend (`7` rails, `33` assets across dynamic menus and layouts, cached offline in `ott_platform.db` on native and `localStorage` on Web). Apple TV remains SwiftUI + shared KMP (not CMP UI).
 
 ## Official references
 

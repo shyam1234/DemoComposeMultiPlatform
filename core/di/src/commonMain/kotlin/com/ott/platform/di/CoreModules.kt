@@ -1,20 +1,24 @@
 package com.ott.platform.di
 
-import com.ott.platform.data.iptv.IptvCatalogRemoteDataSource
-import com.ott.platform.data.repository.IptvCatalogRepository
+import com.ott.platform.data.cms.CmsAuthManager
+import com.ott.platform.data.cms.CmsCatalogRemoteDataSource
+import com.ott.platform.data.cms.CmsConfig
+import com.ott.platform.data.repository.CmsCatalogRepository
 import com.ott.platform.data.repository.PersistentWatchlistRepository
 import com.ott.platform.database.coreDatabaseModule
+import com.ott.platform.domain.playback.PlayerController
+import com.ott.platform.domain.playback.PlayerEngine
 import com.ott.platform.domain.repository.CatalogRepository
 import com.ott.platform.domain.repository.WatchlistRepository
 import com.ott.platform.domain.usecase.GetChannelDetailsUseCase
 import com.ott.platform.domain.usecase.GetHomeFeedUseCase
+import com.ott.platform.domain.usecase.GetLayoutFeedUseCase
+import com.ott.platform.domain.usecase.GetMenuUseCase
 import com.ott.platform.domain.usecase.SearchChannelsUseCase
 import com.ott.platform.domain.usecase.ToggleWatchlistUseCase
 import com.ott.platform.logging.OttLogger
 import com.ott.platform.logging.StdOutLogger
 import com.ott.platform.network.createOttHttpClient
-import com.ott.platform.domain.playback.PlayerController
-import com.ott.platform.domain.playback.PlayerEngine
 import com.ott.platform.testing.FakePlayerEngine
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.factoryOf
@@ -31,19 +35,31 @@ val coreNetworkModule = module {
 }
 
 val coreDataModule = module {
-    singleOf(::IptvCatalogRemoteDataSource)
+    single { CmsConfig() }
+    single { CmsAuthManager(httpClient = get(), logger = get(), config = get()) }
     single {
-        IptvCatalogRepository(
+        CmsCatalogRemoteDataSource(
+            httpClient = get(),
+            authManager = get(),
+            logger = get(),
+            config = get(),
+        )
+    }
+    single {
+        CmsCatalogRepository(
             remote = get(),
             logger = get(),
             local = get(),
+            config = get(),
         )
     } bind CatalogRepository::class
     singleOf(::PersistentWatchlistRepository) bind WatchlistRepository::class
 }
 
 val coreDomainModule = module {
+    factoryOf(::GetMenuUseCase)
     factoryOf(::GetHomeFeedUseCase)
+    factoryOf(::GetLayoutFeedUseCase)
     factoryOf(::SearchChannelsUseCase)
     factoryOf(::GetChannelDetailsUseCase)
     factoryOf(::ToggleWatchlistUseCase)
@@ -51,7 +67,7 @@ val coreDomainModule = module {
 
 /**
  * Demo default: fake engine works on all CMP targets.
- * Android app overrides with Media3 via [platformPlayerModule].
+ * Platform apps override with Media3 / AVPlayer / HTML5 video via platformPlayerModule.
  */
 val corePlayerModule = module {
     single<PlayerEngine> { FakePlayerEngine() }

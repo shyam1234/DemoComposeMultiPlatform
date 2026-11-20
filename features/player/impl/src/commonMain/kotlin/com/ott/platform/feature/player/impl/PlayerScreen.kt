@@ -3,6 +3,7 @@ package com.ott.platform.feature.player.impl
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -36,8 +37,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -87,7 +94,7 @@ fun PlayerScreen(
     isTv: Boolean = false,
 ) {
     val chromePad = if (isTv) 28.dp else 12.dp
-    val isLive = durationMs <= 0L
+    val isLive = durationMs <= 0L && status == PlayerStatus.Playing
     val showVodControls = durationMs > 0L
     val keepControlsPinned = status == PlayerStatus.Error ||
         status == PlayerStatus.Paused ||
@@ -117,6 +124,27 @@ fun PlayerScreen(
         modifier = modifier
             .fillMaxSize()
             .background(Color.Black)
+            .onKeyEvent { event ->
+                if (event.type != KeyEventType.KeyDown) return@onKeyEvent false
+                when (event.key) {
+                    Key.Spacebar, Key.MediaPlayPause -> {
+                        revealControls()
+                        onToggle()
+                        true
+                    }
+                    Key.DirectionLeft -> if (showVodControls) {
+                        revealControls()
+                        onSeek((positionMs - 10_000L).coerceAtLeast(0L))
+                        true
+                    } else false
+                    Key.DirectionRight -> if (showVodControls) {
+                        revealControls()
+                        onSeek((positionMs + 10_000L).coerceAtMost(durationMs))
+                        true
+                    } else false
+                    else -> false
+                }
+            }
             .testTag("player_screen"),
     ) {
         PlatformPlayerSurface(modifier = Modifier.fillMaxSize())
@@ -166,14 +194,18 @@ fun PlayerScreen(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    var closeFocused by remember { mutableStateOf(false) }
                     TextButton(
                         onClick = {
                             revealControls()
                             onBack()
                         },
-                        modifier = Modifier.testTag("player_close"),
+                        border = if (closeFocused) BorderStroke(1.5.dp, OttColors.Focus) else null,
+                        modifier = Modifier
+                            .onFocusChanged { closeFocused = it.isFocused }
+                            .testTag("player_close"),
                     ) {
-                        Text("← Close", color = Color.White)
+                        Text("< Close", color = Color.White)
                     }
                     Spacer(Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
@@ -258,15 +290,19 @@ fun PlayerScreen(
                     Spacer(Modifier.height(10.dp))
                 }
 
+                var toggleFocused by remember { mutableStateOf(false) }
                 Button(
                     onClick = {
                         revealControls()
                         onToggle()
                     },
                     enabled = status != PlayerStatus.Error,
+                    border = if (toggleFocused) BorderStroke(2.dp, OttColors.Focus) else null,
                     colors = ButtonDefaults.buttonColors(containerColor = OttColors.Accent),
                     shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.testTag("player_toggle"),
+                    modifier = Modifier
+                        .onFocusChanged { toggleFocused = it.isFocused }
+                        .testTag("player_toggle"),
                 ) {
                     Text(if (status == PlayerStatus.Playing || status == PlayerStatus.Buffering) "Pause" else "Play")
                 }

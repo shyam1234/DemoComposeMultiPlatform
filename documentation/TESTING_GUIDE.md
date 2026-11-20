@@ -64,31 +64,33 @@ The repo should include sample tests for at least:
 ./gradlew :apps:desktopApp:test
 ```
 
-### Executed on this machine (2026-11-16)
+### Executed on this machine (2026-11-20)
 
 ```bash
 ./gradlew testDebugUnitTest desktopTest --console=plain
 ```
 
-**Total:** 15 suites, **26 tests passed** (0 failures, 0 errors, 0 skipped):
+**Total:** 23 suites, **46 tests passed** (0 failures, 0 errors, 0 skipped):
 
 | Suite | Target(s) | Tests | Result |
 |-------|-----------|-------|--------|
 | `SqlDelightDataSourcesTest` | `desktopTest` | 2 | Passed |
-| `IptvCatalogRepositoryOfflineTest` | `desktopTest`, `testDebugUnitTest` | 1 × 2 | Passed |
-| `M3uPlaylistParserTest` | `desktopTest`, `testDebugUnitTest` | 3 × 2 | Passed |
+| `CmsCatalogMapperTest` | `desktopTest`, `testDebugUnitTest` | 4 × 2 | Passed |
+| `CmsCatalogRepositoryTest` | `desktopTest`, `testDebugUnitTest` | 1 × 2 | Passed |
 | `InMemoryWatchlistRepositoryTest` | `desktopTest`, `testDebugUnitTest` | 1 × 2 | Passed |
+| `ImageResolverTest` | `desktopTest`, `testDebugUnitTest` | 4 × 2 | Passed |
+| `GetMenuAndLayoutFeedUseCaseTest` | `desktopTest`, `testDebugUnitTest` | 2 × 2 | Passed |
 | `SearchChannelsUseCaseTest` | `desktopTest`, `testDebugUnitTest` | 2 × 2 | Passed |
 | `GetHomeFeedUseCaseTest` | `desktopTest`, `testDebugUnitTest` | 2 × 2 | Passed |
 | `PlayerControllerTest` | `desktopTest`, `testDebugUnitTest` | 2 × 2 | Passed |
 | `HomeViewModelTest` | `desktopTest`, `testDebugUnitTest` | 1 × 2 | Passed |
+| `PlayerViewModelTest` | `desktopTest`, `testDebugUnitTest` | 2 × 2 | Passed |
+| `AppMenuViewModelTest` | `desktopTest`, `testDebugUnitTest` | 1 × 2 | Passed |
 
-Also verified on physical devices & Web (`2026-11-16` / `2026-11-17`):
-- **iPhone 13 (`com.ott.platform.ios`)**: Built, installed, and launched via Xcode/devicectl; verified `ott_platform.db` cached 29 categories and 320 channels.
-- **Samsung Android Phone (`SM-A076B`, `com.ott.platform.android`)**: Installed via `:apps:androidApp:installDebug` and launched; verified `ott_platform.db` cached 29 categories and 320 channels.
-- **Samsung Galaxy Tab (`SM_P613`, `com.ott.platform.android`)**: Installed via `:apps:androidApp:installDebug` and launched; verified `ott_platform.db` cached 29 categories and 320 channels.
-- **Smart TV (`192.168.1.24:5555`, `com.ott.platform.androidtv`)**: Installed via `:apps:androidTvApp:assembleDebug` and launched `TvMainActivity`.
-- **Web (`wasmJs`, `apps/webApp`)**: Built production Wasm bundle (`:apps:webApp:wasmJsBrowserDistribution`), served on `http://localhost:8080/`, and verified Home UI + Coil images + `localStorage` offline caching (`ott_web_categories_v1`, `ott_web_shelves_v1`) in browser.
+Also verified on physical devices & Web (`2026-11-20`):
+- **iPhone 13 (`com.ott.platform.ios`)**: Built, installed, and launched via Xcode/devicectl; verified SQLDelight v3 (`ott_platform.db`) synced and cached `1` dynamic menu, `1` layout, and all `7` Play-CMS rails (`33` assets across `Landscape`, `Portrait`, `new`, `top_10`, `mosaic`, `grid`, `editorial`).
+- **Samsung Galaxy Tab (`SM_P613`, `com.ott.platform.android`)**: Installed via `:apps:androidApp:installDebug` and launched; verified SQLDelight v3 (`ott_platform.db`) synced and cached Play-CMS menu, layout, and rails.
+- **Web (`wasmJs`, `apps/webApp`)**: Production Wasm bundle (`:apps:webApp:wasmJsBrowserDistribution`) tested against Play-CMS (CORS enabled) and `localStorage` (`ott_web_cms_*_v2`).
 
 ## Test architecture diagram
 

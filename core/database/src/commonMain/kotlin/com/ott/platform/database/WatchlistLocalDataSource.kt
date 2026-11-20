@@ -84,23 +84,41 @@ class SqlDelightWatchlistLocalDataSource(
             tvg_id = channel.tvgId,
             user_agent = channel.userAgent,
             referrer = channel.referrer,
+            metadata_json = channel.encodeMetadataJson(),
             added_at_ms = nowMs(),
         )
     }
 
-    private fun Watchlist.toDomain(): Channel = Channel(
-        id = ContentId(channel_id),
-        title = title,
-        logoUrl = logo_url,
-        streamUrl = stream_url,
-        categoryId = category_id,
-        categoryName = category_name,
-        groupTitle = group_title,
-        isGeoBlocked = is_geo_blocked != 0L,
-        isNot247 = is_not_247 != 0L,
-        quality = quality,
-        tvgId = tvg_id,
-        userAgent = user_agent,
-        referrer = referrer,
-    )
+    private fun Watchlist.toDomain(): Channel {
+        val meta = decodeChannelMetadata(metadata_json)
+        return Channel(
+            id = ContentId(channel_id),
+            title = title,
+            logoUrl = logo_url,
+            streamUrl = stream_url,
+            categoryId = category_id,
+            categoryName = category_name,
+            groupTitle = group_title,
+            isGeoBlocked = is_geo_blocked != 0L,
+            isNot247 = is_not_247 != 0L,
+            quality = quality,
+            tvgId = tvg_id,
+            userAgent = user_agent,
+            referrer = referrer,
+            images = meta.images.map { it.toDomain() },
+            backdropUrl = meta.backdropUrl,
+            synopsis = meta.synopsis,
+            genres = meta.genres,
+            releaseYear = meta.releaseYear,
+            runtimeMinutes = meta.runtimeMinutes,
+            parentalRating = meta.parentalRating,
+            imdbRating = meta.imdbRating,
+            assetType = meta.assetType,
+            cast = meta.cast,
+            director = meta.director,
+            tags = meta.tags,
+            trailerUrl = meta.trailerUrl,
+            language = meta.language,
+        )
+    }
 }

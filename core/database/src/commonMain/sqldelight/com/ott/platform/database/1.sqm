@@ -1,0 +1,20 @@
+ALTER TABLE categories ADD COLUMN rail_display_type TEXT NOT NULL DEFAULT 'Landscape';
+ALTER TABLE categories ADD COLUMN rail_content_type TEXT NOT NULL DEFAULT 'generic';
+
+ALTER TABLE channels ADD COLUMN metadata_json TEXT NOT NULL DEFAULT '';
+
+ALTER TABLE watchlist ADD COLUMN metadata_json TEXT NOT NULL DEFAULT '';
+
+CREATE TABLE IF NOT EXISTS cms_menu (
+    id TEXT NOT NULL PRIMARY KEY,
+    payload_json TEXT NOT NULL,
+    updated_at_ms INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS cms_layout (
+    id TEXT NOT NULL PRIMARY KEY,
+    name TEXT NOT NULL,
+    theme_url TEXT,
+    rail_ids_json TEXT NOT NULL,
+    updated_at_ms INTEGER NOT NULL
+);

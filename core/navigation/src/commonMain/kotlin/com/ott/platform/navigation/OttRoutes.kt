@@ -3,11 +3,13 @@ package com.ott.platform.navigation
 object OttRoutes {
     const val SPLASH = "splash"
     const val HOME = "home"
+    const val LAYOUT = "layout/{layoutId}"
     const val SEARCH = "search"
     const val WATCHLIST = "watchlist"
     const val DETAILS = "details/{contentId}"
     const val PLAYER = "player/{contentId}"
 
+    fun layout(layoutId: String): String = "layout/${encode(layoutId)}"
     fun details(contentId: String): String = "details/${encode(contentId)}"
     fun player(contentId: String): String = "player/${encode(contentId)}"
 

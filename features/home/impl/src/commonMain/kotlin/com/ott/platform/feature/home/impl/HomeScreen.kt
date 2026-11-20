@@ -3,41 +3,68 @@ package com.ott.platform.feature.home.impl
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.ott.platform.designsystem.OttColors
 import com.ott.platform.designsystem.OttDimens
+import com.ott.platform.domain.model.AppMenuItem
 import com.ott.platform.domain.model.Channel
 import com.ott.platform.ui.components.ContentShelfRow
+import com.ott.platform.ui.components.FocusablePillButton
 import com.ott.platform.ui.components.HeroBannerCarousel
+import com.ott.platform.ui.components.PillStyle
+import com.ott.platform.ui.components.RemoteImage
 import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.parameter.parametersOf
 
 @Composable
 fun HomeRoute(
     onOpenDetails: (Channel) -> Unit,
     onPlay: (Channel) -> Unit,
     isTv: Boolean = false,
-    viewModel: HomeViewModel = koinViewModel(),
+    layoutId: String? = null,
+    subMenuItems: List<AppMenuItem> = emptyList(),
+    viewModel: HomeViewModel = koinViewModel(
+        key = layoutId ?: "home_default",
+        parameters = { parametersOf(layoutId) },
+    ),
 ) {
+    LaunchedEffect(layoutId) {
+        if (layoutId != null) {
+            viewModel.selectLayout(layoutId)
+        }
+    }
     val state by viewModel.state.collectAsState()
     HomeScreen(
         state = state,
         isTv = isTv,
-        onRetry = viewModel::refresh,
+        subMenuItems = subMenuItems,
+        onSubMenuClick = { item -> item.layoutId?.let(viewModel::selectLayout) },
+        onRetry = { viewModel.refresh() },
         onOpenDetails = onOpenDetails,
         onPlay = onPlay,
     )
@@ -50,6 +77,8 @@ fun HomeScreen(
     onOpenDetails: (Channel) -> Unit,
     onPlay: (Channel) -> Unit,
     isTv: Boolean = false,
+    subMenuItems: List<AppMenuItem> = emptyList(),
+    onSubMenuClick: (AppMenuItem) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     when {
@@ -70,52 +99,115 @@ fun HomeScreen(
             Box(
                 modifier
                     .fillMaxSize()
-                    .background(OttColors.Background),
+                    .background(OttColors.Background)
+                    .padding(24.dp),
                 contentAlignment = Alignment.Center,
             ) {
-                TextButton(onClick = onRetry, modifier = Modifier.testTag("home_retry")) {
-                    Text(state.error ?: "Retry")
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = state.error ?: "Unable to load catalog",
+                        color = OttColors.OnSurfaceMuted,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    TextButton(onClick = onRetry, modifier = Modifier.testTag("home_retry")) {
+                        Text("Retry", color = OttColors.AccentSoft)
+                    }
                 }
             }
         }
         else -> {
             val feed = state.feed ?: return
             val edge = if (isTv) OttDimens.ScreenPadding else OttDimens.PhoneScreenPadding
-            LazyColumn(
+            Box(
                 modifier = modifier
                     .fillMaxSize()
-                    .background(OttColors.Background)
-                    .testTag("home_feed"),
-                contentPadding = PaddingValues(bottom = if (isTv) 48.dp else 16.dp),
-                verticalArrangement = Arrangement.spacedBy(
-                    if (isTv) OttDimens.ShelfSpacing else OttDimens.PhoneShelfSpacing,
-                ),
+                    .background(OttColors.Background),
             ) {
-                if (feed.heroes.isNotEmpty()) {
-                    item(key = "hero_carousel") {
-                        HeroBannerCarousel(
-                            channels = feed.heroes,
-                            onPlay = onPlay,
-                            onDetails = onOpenDetails,
-                            height = if (isTv) OttDimens.TvHeroHeight else OttDimens.HeroHeight,
-                            isTv = isTv,
+                // Subtle atmospheric theme backdrop provided by CMS Layout theme_url
+                if (!feed.themeUrl.isNullOrBlank()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(if (isTv) 480.dp else 320.dp),
+                    ) {
+                        RemoteImage(
+                            url = feed.themeUrl,
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .alpha(0.18f),
+                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(
+                                    Brush.verticalGradient(
+                                        listOf(Color.Transparent, OttColors.Background),
+                                    ),
+                                ),
                         )
                     }
                 }
-                items(feed.shelves, key = { it.id }) { shelf ->
-                    ContentShelfRow(
-                        shelf = shelf,
-                        onChannelClick = onOpenDetails,
-                        isTv = isTv,
-                    )
-                }
-                if (state.error != null) {
-                    item {
-                        Text(
-                            text = "Partial error: ${state.error}",
-                            color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.padding(horizontal = edge),
+
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .testTag("home_feed"),
+                    contentPadding = PaddingValues(bottom = if (isTv) 48.dp else 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(
+                        if (isTv) OttDimens.ShelfSpacing else OttDimens.PhoneShelfSpacing,
+                    ),
+                ) {
+                    if (subMenuItems.isNotEmpty()) {
+                        item(key = "sub_menu_bar") {
+                            LazyRow(
+                                contentPadding = PaddingValues(horizontal = edge, vertical = 4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                modifier = Modifier.testTag("home_submenu"),
+                            ) {
+                                items(subMenuItems, key = { it.id }) { sub ->
+                                    val selected = sub.layoutId == state.activeLayoutId
+                                    FocusablePillButton(
+                                        label = sub.title,
+                                        onClick = { onSubMenuClick(sub) },
+                                        style = if (selected) PillStyle.Primary else PillStyle.Secondary,
+                                        compact = !isTv,
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    if (feed.heroes.isNotEmpty()) {
+                        item(key = "hero_carousel") {
+                            HeroBannerCarousel(
+                                channels = feed.heroes,
+                                onPlay = onPlay,
+                                onDetails = onOpenDetails,
+                                height = if (isTv) OttDimens.TvHeroHeight else OttDimens.HeroHeight,
+                                isTv = isTv,
+                            )
+                        }
+                    }
+
+                    items(feed.shelves, key = { it.id }) { shelf ->
+                        ContentShelfRow(
+                            shelf = shelf,
+                            onChannelClick = onOpenDetails,
+                            isTv = isTv,
                         )
+                    }
+
+                    if (state.error != null) {
+                        item {
+                            Row(modifier = Modifier.padding(horizontal = edge)) {
+                                Text(
+                                    text = "Partial error: ${state.error}",
+                                    color = MaterialTheme.colorScheme.error,
+                                )
+                            }
+                        }
                     }
                 }
             }

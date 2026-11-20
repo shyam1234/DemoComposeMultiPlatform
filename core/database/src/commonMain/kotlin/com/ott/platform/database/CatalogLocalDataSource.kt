@@ -1,5 +1,6 @@
 package com.ott.platform.database
 
+import com.ott.platform.domain.model.AppMenuItem
 import com.ott.platform.domain.model.Category
 import com.ott.platform.domain.model.Channel
 import com.ott.platform.domain.model.ContentId
@@ -8,10 +9,27 @@ import kotlin.time.ExperimentalTime
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 
+data class CachedLayout(
+    val id: String,
+    val name: String,
+    val themeUrl: String? = null,
+    val railIds: List<String> = emptyList(),
+    val updatedAtMs: Long = 0L,
+)
+
 interface CatalogLocalDataSource {
+    suspend fun getMenuItems(): List<AppMenuItem>
+    suspend fun getMenuUpdatedAtMs(): Long?
+    suspend fun replaceMenuItems(items: List<AppMenuItem>)
+
+    suspend fun getLayout(layoutId: String): CachedLayout?
+    suspend fun saveLayout(layout: CachedLayout)
+
     suspend fun getCategories(): List<Category>
+    suspend fun getCategory(categoryId: String): Category?
     suspend fun getCategoriesUpdatedAtMs(): Long?
     suspend fun replaceCategories(categories: List<Category>)
+    suspend fun upsertCategory(category: Category, sortOrder: Int = 0)
 
     suspend fun getChannelsByCategory(categoryId: String, limit: Int): List<Channel>
     suspend fun getCategoryUpdatedAtMs(categoryId: String): Long?
@@ -32,12 +50,74 @@ class SqlDelightCatalogLocalDataSource(
     private val queries: OttDatabaseQueries
         get() = database.ottDatabaseQueries
 
+    override suspend fun getMenuItems(): List<AppMenuItem> = withContext(ioDispatcher) {
+        val row = queries.selectMenuPayload(MENU_ROW_ID).executeAsOneOrNull() ?: return@withContext emptyList()
+        runCatching {
+            localDbJson.decodeFromString<List<StoredMenuItem>>(row.payload_json).map { it.toDomain() }
+        }.getOrDefault(emptyList())
+    }
+
+    override suspend fun getMenuUpdatedAtMs(): Long? = withContext(ioDispatcher) {
+        queries.selectMenuPayload(MENU_ROW_ID).executeAsOneOrNull()?.updated_at_ms
+    }
+
+    override suspend fun replaceMenuItems(items: List<AppMenuItem>) {
+        withContext(ioDispatcher) {
+            val json = localDbJson.encodeToString(items.map { it.toStored() })
+            queries.upsertMenuPayload(
+                id = MENU_ROW_ID,
+                payload_json = json,
+                updated_at_ms = nowMs(),
+            )
+        }
+    }
+
+    override suspend fun getLayout(layoutId: String): CachedLayout? = withContext(ioDispatcher) {
+        val row = queries.selectLayoutById(layoutId).executeAsOneOrNull() ?: return@withContext null
+        val railIds = runCatching {
+            localDbJson.decodeFromString<List<String>>(row.rail_ids_json)
+        }.getOrDefault(emptyList())
+        CachedLayout(
+            id = row.id,
+            name = row.name,
+            themeUrl = row.theme_url,
+            railIds = railIds,
+            updatedAtMs = row.updated_at_ms,
+        )
+    }
+
+    override suspend fun saveLayout(layout: CachedLayout) {
+        withContext(ioDispatcher) {
+            queries.upsertLayout(
+                id = layout.id,
+                name = layout.name,
+                theme_url = layout.themeUrl,
+                rail_ids_json = localDbJson.encodeToString(layout.railIds),
+                updated_at_ms = nowMs(),
+            )
+        }
+    }
+
     override suspend fun getCategories(): List<Category> = withContext(ioDispatcher) {
         queries.selectAllCategories().executeAsList().map { row ->
             Category(
                 id = row.id,
                 name = row.name,
                 description = row.description,
+                displayType = row.rail_display_type,
+                contentType = row.rail_content_type,
+            )
+        }
+    }
+
+    override suspend fun getCategory(categoryId: String): Category? = withContext(ioDispatcher) {
+        queries.selectCategoryById(categoryId).executeAsOneOrNull()?.let { row ->
+            Category(
+                id = row.id,
+                name = row.name,
+                description = row.description,
+                displayType = row.rail_display_type,
+                contentType = row.rail_content_type,
             )
         }
     }
@@ -55,10 +135,26 @@ class SqlDelightCatalogLocalDataSource(
                     id = category.id,
                     name = category.name,
                     description = category.description,
+                    rail_display_type = category.displayType,
+                    rail_content_type = category.contentType,
                     sort_order = index.toLong(),
                     updated_at_ms = timestamp,
                 )
             }
+        }
+    }
+
+    override suspend fun upsertCategory(category: Category, sortOrder: Int) {
+        withContext(ioDispatcher) {
+            queries.upsertCategory(
+                id = category.id,
+                name = category.name,
+                description = category.description,
+                rail_display_type = category.displayType,
+                rail_content_type = category.contentType,
+                sort_order = sortOrder.toLong(),
+                updated_at_ms = nowMs(),
+            )
         }
     }
 
@@ -95,6 +191,7 @@ class SqlDelightCatalogLocalDataSource(
                         tvg_id = channel.tvgId,
                         user_agent = channel.userAgent,
                         referrer = channel.referrer,
+                        metadata_json = channel.encodeMetadataJson(),
                         shelf_order = index.toLong(),
                         updated_at_ms = timestamp,
                     )
@@ -118,19 +215,40 @@ class SqlDelightCatalogLocalDataSource(
         queries.countChannels().executeAsOne()
     }
 
-    private fun Channels.toDomain(): Channel = Channel(
-        id = ContentId(id),
-        title = title,
-        logoUrl = logo_url,
-        streamUrl = stream_url,
-        categoryId = category_id,
-        categoryName = category_name,
-        groupTitle = group_title,
-        isGeoBlocked = is_geo_blocked != 0L,
-        isNot247 = is_not_247 != 0L,
-        quality = quality,
-        tvgId = tvg_id,
-        userAgent = user_agent,
-        referrer = referrer,
-    )
+    private fun Channels.toDomain(): Channel {
+        val meta = decodeChannelMetadata(metadata_json)
+        return Channel(
+            id = ContentId(id),
+            title = title,
+            logoUrl = logo_url,
+            streamUrl = stream_url,
+            categoryId = category_id,
+            categoryName = category_name,
+            groupTitle = group_title,
+            isGeoBlocked = is_geo_blocked != 0L,
+            isNot247 = is_not_247 != 0L,
+            quality = quality,
+            tvgId = tvg_id,
+            userAgent = user_agent,
+            referrer = referrer,
+            images = meta.images.map { it.toDomain() },
+            backdropUrl = meta.backdropUrl,
+            synopsis = meta.synopsis,
+            genres = meta.genres,
+            releaseYear = meta.releaseYear,
+            runtimeMinutes = meta.runtimeMinutes,
+            parentalRating = meta.parentalRating,
+            imdbRating = meta.imdbRating,
+            assetType = meta.assetType,
+            cast = meta.cast,
+            director = meta.director,
+            tags = meta.tags,
+            trailerUrl = meta.trailerUrl,
+            language = meta.language,
+        )
+    }
+
+    private companion object {
+        const val MENU_ROW_ID = "default_menu"
+    }
 }

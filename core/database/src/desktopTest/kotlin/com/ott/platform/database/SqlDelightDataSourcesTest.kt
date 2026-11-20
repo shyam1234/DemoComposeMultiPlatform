@@ -1,9 +1,12 @@
 package com.ott.platform.database
 
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
+import com.ott.platform.domain.model.AppMenuItem
 import com.ott.platform.domain.model.Category
 import com.ott.platform.domain.model.Channel
 import com.ott.platform.domain.model.ContentId
+import com.ott.platform.domain.model.ImageTypes
+import com.ott.platform.domain.model.MediaImage
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -47,69 +50,104 @@ class SqlDelightDataSourcesTest {
     }
 
     @Test
-    fun `watchlist persists add toggle remove and emits flow`() = runTest {
-        val news = sampleChannel(id = "news:1", title = "News 24", categoryId = "news")
-        val movies = sampleChannel(id = "movies:1", title = "Cinema One", categoryId = "movies")
+    fun `watchlist persists add toggle remove and metadata`() = runTest {
+        val movie = sampleChannel(id = "movie:1", title = "The RIP", categoryId = "new")
+        val show = sampleChannel(id = "show:1", title = "Reacher", categoryId = "tv_shows")
 
         assertTrue(watchlistLocal.observeAll().first().isEmpty())
 
-        watchlistLocal.add(news)
-        watchlistLocal.add(news) // duplicate add should be ignored
+        watchlistLocal.add(movie)
+        watchlistLocal.add(movie) // duplicate add should be ignored
         fakeClockMs += 100L
-        assertTrue(watchlistLocal.toggle(movies))
+        assertTrue(watchlistLocal.toggle(show))
 
         val saved = watchlistLocal.observeAll().first()
-        assertEquals(listOf(news.id, movies.id), saved.map { it.id })
-        assertTrue(watchlistLocal.exists(news.id))
-        assertTrue(watchlistLocal.exists(movies.id))
+        assertEquals(listOf(movie.id, show.id), saved.map { it.id })
+        assertEquals(movie.images, saved.first().images)
+        assertEquals(movie.genres, saved.first().genres)
+        assertTrue(watchlistLocal.exists(movie.id))
+        assertTrue(watchlistLocal.exists(show.id))
 
-        assertFalse(watchlistLocal.toggle(news))
-        assertFalse(watchlistLocal.exists(news.id))
+        assertFalse(watchlistLocal.toggle(movie))
+        assertFalse(watchlistLocal.exists(movie.id))
 
-        watchlistLocal.remove(movies.id)
+        watchlistLocal.remove(show.id)
         assertTrue(watchlistLocal.observeAll().first().isEmpty())
     }
 
     @Test
-    fun `catalog stores categories channels search and preserves order`() = runTest {
+    fun `catalog stores menu layouts categories channels and searches rich metadata`() = runTest {
+        val menu = listOf(
+            AppMenuItem(
+                id = "tv_home",
+                title = "Home",
+                layoutId = "6af4302c6368a4cce6863ca6",
+                deeplinkUrl = "http://layouts/6af4302c6368a4cce6863ca6",
+            ),
+            AppMenuItem(
+                id = "movies",
+                title = "Movies",
+                layoutId = "6af4245f6368a4cce6863c73",
+                children = listOf(
+                    AppMenuItem(id = "action", title = "Action", layoutId = "action_layout"),
+                ),
+            ),
+        )
+        catalogLocal.replaceMenuItems(menu)
+        assertEquals(menu, catalogLocal.getMenuItems())
+        assertEquals(1_000L, catalogLocal.getMenuUpdatedAtMs())
+
+        val layout = CachedLayout(
+            id = "6af4302c6368a4cce6863ca6",
+            name = "Home",
+            themeUrl = "https://cms.play-cms.com/theme.png",
+            railIds = listOf("rail_1", "rail_2"),
+        )
+        catalogLocal.saveLayout(layout)
+        val loadedLayout = catalogLocal.getLayout("6af4302c6368a4cce6863ca6")
+        assertNotNull(loadedLayout)
+        assertEquals(listOf("rail_1", "rail_2"), loadedLayout.railIds)
+        assertEquals("https://cms.play-cms.com/theme.png", loadedLayout.themeUrl)
+
         val categories = listOf(
-            Category(id = "news", name = "News", description = "Live news"),
-            Category(id = "movies", name = "Movies", description = "Films"),
+            Category(id = "rail_1", name = "New Releases", displayType = "Landscape", contentType = "new"),
+            Category(id = "rail_2", name = "Top 10 Today", displayType = "Portrait", contentType = "top_10"),
         )
         catalogLocal.replaceCategories(categories)
-
         assertEquals(categories, catalogLocal.getCategories())
-        assertEquals(1_000L, catalogLocal.getCategoriesUpdatedAtMs())
+        assertEquals("top_10", catalogLocal.getCategory("rail_2")?.contentType)
 
-        val newsChannels = listOf(
-            sampleChannel(id = "news:1", title = "World News", categoryId = "news", logoUrl = "https://img/1.png"),
-            sampleChannel(id = "news:2", title = "City Desk", categoryId = "news", logoUrl = null),
+        val rail1Items = listOf(
+            sampleChannel(id = "m1", title = "The RIP", categoryId = "rail_1", logoUrl = "https://img/1.png"),
+            sampleChannel(id = "m2", title = "Dead Man's Wire", categoryId = "rail_1", logoUrl = null),
         )
-        val movieChannels = listOf(
-            sampleChannel(id = "movies:1", title = "Sci-Fi Classics", categoryId = "movies"),
+        val rail2Items = listOf(
+            sampleChannel(id = "m1", title = "The RIP", categoryId = "rail_2"),
+            sampleChannel(id = "m3", title = "Becoming The Beckhams", categoryId = "rail_2"),
         )
 
-        catalogLocal.replaceChannelsForCategory("news", newsChannels)
-        catalogLocal.replaceChannelsForCategory("movies", movieChannels)
+        catalogLocal.replaceChannelsForCategory("rail_1", rail1Items)
+        catalogLocal.replaceChannelsForCategory("rail_2", rail2Items)
 
-        assertEquals(newsChannels, catalogLocal.getChannelsByCategory("news", limit = 10))
-        assertEquals(movieChannels, catalogLocal.getChannelsByCategory("movies", limit = 10))
-        assertEquals(3L, catalogLocal.getChannelCount())
+        assertEquals(rail1Items, catalogLocal.getChannelsByCategory("rail_1", limit = 10))
+        assertEquals(rail2Items, catalogLocal.getChannelsByCategory("rail_2", limit = 10))
+        assertEquals(3L, catalogLocal.getChannelCount()) // m1, m2, m3 distinct asset ids
 
-        val byId = catalogLocal.getChannel(ContentId("news:2"))
+        val byId = catalogLocal.getChannel(ContentId("m1"))
         assertNotNull(byId)
-        assertEquals("City Desk", byId.title)
+        assertEquals(listOf("Crime", "Thriller"), byId.genres)
 
-        val searchResults = catalogLocal.searchChannels("news", limit = 10)
-        assertEquals(2, searchResults.size)
-        assertEquals(ContentId("news:1"), searchResults.first().id)
+        // Searches title AND metadata_json (genres/synopsis), deduplicated across rails
+        val genreHits = catalogLocal.searchChannels("Thriller", limit = 10)
+        assertEquals(3, genreHits.size)
 
-        // Replacing one category leaves other categories intact
-        val updatedNews = listOf(sampleChannel(id = "news:3", title = "Morning Briefing", categoryId = "news"))
-        catalogLocal.replaceChannelsForCategory("news", updatedNews)
-        assertEquals(updatedNews, catalogLocal.getChannelsByCategory("news", limit = 10))
-        assertNull(catalogLocal.getChannel(ContentId("news:1")))
-        assertNotNull(catalogLocal.getChannel(ContentId("movies:1")))
+        // Replacing one rail leaves other rails intact (including shared asset m1)
+        val updatedRail1 = listOf(sampleChannel(id = "m4", title = "Test Asset", categoryId = "rail_1"))
+        catalogLocal.replaceChannelsForCategory("rail_1", updatedRail1)
+        assertEquals(updatedRail1, catalogLocal.getChannelsByCategory("rail_1", limit = 10))
+        assertNotNull(catalogLocal.getChannel(ContentId("m1"))) // still present in rail_2
+        assertNull(catalogLocal.getChannel(ContentId("m2")))
+        assertNotNull(catalogLocal.getChannel(ContentId("m3")))
     }
 
     private fun sampleChannel(
@@ -124,5 +162,17 @@ class SqlDelightDataSourcesTest {
         streamUrl = "https://example.com/$id.m3u8",
         categoryId = categoryId,
         categoryName = categoryId.replaceFirstChar { it.uppercase() },
+        images = listOf(
+            MediaImage(ImageTypes.PORTRAIT, "https://example.com/$id-port.png", 729, 1080),
+            MediaImage(ImageTypes.LANDSCAPE, "https://example.com/$id-land.png", 1920, 1080),
+        ),
+        backdropUrl = "https://example.com/$id-land.png",
+        synopsis = "Sample synopsis for $title",
+        genres = listOf("Crime", "Thriller"),
+        releaseYear = "2026",
+        runtimeMinutes = 120,
+        parentalRating = "16+",
+        imdbRating = 7.8,
+        assetType = "movies",
     )
 }

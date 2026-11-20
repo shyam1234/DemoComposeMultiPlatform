@@ -20,6 +20,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import com.ott.platform.designsystem.OttDimens
 import com.ott.platform.domain.model.Channel
+import com.ott.platform.domain.model.ShelfCardStyle
 import com.ott.platform.ui.components.ChannelCard
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -53,22 +54,27 @@ fun SearchScreen(
             onValueChange = onQueryChange,
             modifier = Modifier.fillMaxWidth().testTag("search_field"),
             singleLine = true,
-            label = { Text("Search IPTV channels") },
-            placeholder = { Text("news, sports, movies…") },
+            label = { Text("Search movies, shows & genres") },
+            placeholder = { Text("The RIP, Sci-Fi, Reacher…") },
         )
         if (state.isLoading) {
             CircularProgressIndicator(modifier = Modifier.padding(16.dp).testTag("search_loading"))
         }
         state.error?.let { Text(it, modifier = Modifier.padding(top = 8.dp)) }
         LazyVerticalGrid(
-            columns = GridCells.Adaptive(140.dp),
+            columns = GridCells.Adaptive(if (isTv) 220.dp else 156.dp),
             contentPadding = PaddingValues(vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.fillMaxSize().testTag("search_results"),
         ) {
             items(state.results, key = { it.id.value }) { channel ->
-                ChannelCard(channel = channel, onClick = { onOpenDetails(channel) })
+                ChannelCard(
+                    channel = channel,
+                    onClick = { onOpenDetails(channel) },
+                    style = ShelfCardStyle.Landscape,
+                    isTv = isTv,
+                )
             }
         }
     }

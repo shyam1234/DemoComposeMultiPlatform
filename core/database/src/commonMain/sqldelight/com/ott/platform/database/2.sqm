@@ -1,0 +1,28 @@
+DELETE FROM categories;
+DROP TABLE IF EXISTS channels;
+
+CREATE TABLE IF NOT EXISTS channels (
+    id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    logo_url TEXT,
+    stream_url TEXT NOT NULL,
+    category_id TEXT NOT NULL,
+    category_name TEXT NOT NULL,
+    group_title TEXT NOT NULL,
+    is_geo_blocked INTEGER NOT NULL,
+    is_not_247 INTEGER NOT NULL,
+    quality TEXT,
+    tvg_id TEXT,
+    user_agent TEXT,
+    referrer TEXT,
+    metadata_json TEXT NOT NULL DEFAULT '',
+    shelf_order INTEGER NOT NULL,
+    updated_at_ms INTEGER NOT NULL,
+    PRIMARY KEY (category_id, id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_channels_category_order
+ON channels(category_id, shelf_order);
+
+CREATE INDEX IF NOT EXISTS idx_channels_title
+ON channels(title);
